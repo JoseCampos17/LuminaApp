@@ -14,8 +14,9 @@ export const financeState = $state({
   transactions: [] as Transaction[],
   recurringExpenses: [] as RecurringExpense[],
 
-  /** Salary stored internally in USD (biweekly basis). */
+  /** Salary stored internally in USD (normalized to the saved frequency). */
   salaryUSD: 0,
+  salaryFrequency: "quincena" as "quincena" | "mes",
 
   /** User's chosen local currency (COP | CLP). */
   localCurrency:
@@ -54,6 +55,7 @@ export function isMonthly() {
 }
 
 export function salaryValue() {
+  // salaryUSD is always stored as the bi-weekly (quincenal) equivalent.
   return financeState.salaryUSD * (isMonthly() ? 2 : 1);
 }
 
@@ -135,9 +137,11 @@ export async function loadData() {
     // 2. Load other data
     financeState.transactions = await invoke("get_transactions");
 
-    const salaryData = await invoke("get_salary");
+    const salaryData = await invoke("get_salary") as any;
     const rawAmount = typeof salaryData === "number" ? salaryData : salaryData.amount;
     const rawCurrency = typeof salaryData === "number" ? "USD" : (salaryData.currency || "USD");
+
+    // DB always stores the bi-weekly (quincenal) equivalent — no normalization needed.
     financeState.salaryUSD = toUSD(rawAmount, rawCurrency, financeState.currencies);
 
     const exps: any[] = await invoke("get_recurring_expenses");
@@ -159,5 +163,15 @@ export async function deleteTransaction(id: string) {
     await loadData();
   } catch (e) {
     console.error(e);
+  }
+}
+
+export async function clearAllData() {
+  console.log("[financeStore] Clearing all data...");
+  try {
+    await invoke("clear_all_data");
+    await loadData();
+  } catch (e) {
+    console.error("[financeStore] clearAllData error:", e);
   }
 }

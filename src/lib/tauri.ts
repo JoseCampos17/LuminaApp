@@ -60,6 +60,12 @@ export async function invoke(command: string, args: any = {}): Promise<any> {
           .filter((e: any) => e.id !== args.id);
         localStorage.setItem("mock_recurring", JSON.stringify(filtered));
         return null;
+      case "clear_all_data":
+        localStorage.removeItem("mock_transactions");
+        localStorage.removeItem("mock_recurring");
+        localStorage.setItem("mock_salary", "0");
+        localStorage.setItem("mock_salary_currency", "COP");
+        return null;
       default:
         return null;
     }

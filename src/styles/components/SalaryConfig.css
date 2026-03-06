@@ -11,10 +11,60 @@
   gap: 8px;
 }
 
-.salary-box .label {
-  font-size: 0.9rem;
-  color: var(--text-dim);
+.salary-box .header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
 }
+
+.frequency-pill {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-border);
+}
+
+.pill-opt {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 18px;
+  cursor: not-allowed;
+  transition: all 0.2s;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.pill-opt.active {
+  background: rgba(188, 19, 254, 0.4);
+  color: var(--text-color);
+  opacity: 0.75;
+}
+
+.salary-box[data-editing="true"] .pill-opt {
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.salary-box[data-editing="true"] .pill-opt.active {
+  background: var(--neon-purple);
+  color: white;
+  opacity: 1;
+  box-shadow: 0 2px 8px rgba(188, 19, 254, 0.3);
+}
+
+.salary-box[data-editing="true"] .pill-opt:not(.active):hover {
+  background: rgba(255, 255, 255, 0.08);
+  opacity: 1;
+}
+
+
 
 .salary-box .amount {
   font-size: 1.5rem;
@@ -29,30 +79,77 @@
   gap: 15px;
 }
 
+.salary-box .edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
 .salary-box input {
   background: var(--input-bg);
   border: 1px solid var(--glass-border);
   color: var(--text-color);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   outline: none;
-  width: 150px;
+  width: 100%;
+  max-width: 200px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
 }
 
-.edit-btn,
-.save-btn {
-  background: rgba(188, 19, 254, 0.2);
-  border: 1px solid var(--neon-purple);
-  color: var(--neon-purple);
-  padding: 4px 12px;
+.salary-box input:focus {
+  border-color: var(--neon-purple);
+}
+
+.edit-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-dim);
+  padding: 6px 14px;
   border-radius: 12px;
   cursor: pointer;
   font-size: 0.8rem;
-  transition: all 0.2s;
+  font-weight: 600;
+  transition: all 0.25s ease;
 }
 
-.edit-btn:hover,
+.save-btn {
+  background: rgba(188, 19, 254, 0.1);
+  border: 1px solid rgba(188, 19, 254, 0.3);
+  color: var(--neon-purple);
+  padding: 3px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.edit-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
 .save-btn:hover {
-  background: var(--neon-purple);
-  color: white;
+  background: rgba(188, 19, 254, 0.2);
+  border-color: var(--neon-purple);
+  box-shadow: 0 4px 12px rgba(188, 19, 254, 0.15);
+  transform: translateY(-1px);
+}
+
+.edit-btn:active,
+.save-btn:active {
+  transform: translateY(0);
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 5px;
 }

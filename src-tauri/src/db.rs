@@ -80,6 +80,10 @@ pub fn init(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error::Er
         "INSERT OR IGNORE INTO settings (key, value) VALUES ('biweekly_salary_currency', 'COP')",
         [],
     )?;
+    conn.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('salary_frequency', 'quincena')",
+        [],
+    )?;
 
     // Create recurring expenses table
     conn.execute(
@@ -253,5 +257,15 @@ pub fn update_transaction(
         "UPDATE view_transactions SET amount = ?1, category = ?2, description = ?3, date = ?4 WHERE id = ?5",
         params![amount, category, description, date, id],
     )?;
+    Ok(())
+}
+
+/// Clears all financial data and resets settings.
+pub fn clear_all_data(conn: &Connection) -> rusqlite::Result<()> {
+    conn.execute("DELETE FROM view_transactions", [])?;
+    conn.execute("DELETE FROM events", [])?;
+    conn.execute("DELETE FROM recurring_expenses", [])?;
+    conn.execute("UPDATE settings SET value = '0' WHERE key = 'biweekly_salary'", [])?;
+    conn.execute("UPDATE settings SET value = 'COP' WHERE key = 'biweekly_salary_currency'", [])?;
     Ok(())
 }

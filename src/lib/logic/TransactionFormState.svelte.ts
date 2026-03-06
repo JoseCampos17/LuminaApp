@@ -1,5 +1,4 @@
 import { invoke } from "$lib/tauri";
-import { ulid } from "ulid";
 
 export class TransactionFormState {
   description = $state("");
@@ -39,8 +38,12 @@ export class TransactionFormState {
           date: this.date,
         });
       } else {
-        const aggregateId = ulid();
-        const eventId = ulid();
+        const txs = await invoke("get_transactions");
+        const numericIds = txs
+          .map((t: any) => parseInt(t.id, 10))
+          .filter((n: any) => !isNaN(n));
+        const maxId = numericIds.length > 0 ? Math.max(...numericIds) : 0;
+        const newId = (maxId + 1).toString();
 
         const payload = JSON.stringify({
           amount: finalAmount,
@@ -49,8 +52,8 @@ export class TransactionFormState {
           date: this.date,
         });
         const event = {
-          event_id: eventId,
-          aggregate_id: aggregateId,
+          event_id: newId,
+          aggregate_id: newId,
           aggregate_type: "TRANSACTION",
           event_type: "TRANSACTION_CREATED",
           payload,

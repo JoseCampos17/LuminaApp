@@ -24,6 +24,25 @@
   let isDeleteModalOpen = $state(false);
   let transactionToDelete = $state<string | null>(null);
 
+  // Currency change confirmation
+  let showCurrencyConfirmModal = $state(false);
+  let pendingCurrency = $state<string | null>(null);
+
+  function handleCurrencySelection(opt: string) {
+    if (dash.finance.localCurrency === opt) return;
+    pendingCurrency = opt;
+    showCurrencyConfirmModal = true;
+  }
+
+  async function confirmCurrencyChange() {
+    if (pendingCurrency) {
+      await dash.clearAllData();
+      dash.setLocalCurrency(pendingCurrency);
+      showCurrencyConfirmModal = false;
+      pendingCurrency = null;
+    }
+  }
+
   function loadMore() {
     visibleRecords += pageSize;
   }
@@ -412,7 +431,7 @@
             >
               <div class="tx-left">
                 <span class="tx-desc"
-                  >[{tx.id}] {tx.description || "Sin descripción"}</span
+                  >{tx.description || "Sin descripción"}</span
                 >
                 <span class="tx-meta">{tx.category} • {tx.date}</span>
               </div>
@@ -471,7 +490,7 @@
               onkeypress={(e) => e.key === "Enter" && handleClickEdit(exp)}
             >
               <div class="tx-left">
-                <span class="tx-desc">[{exp.id}] {exp.description}</span>
+                <span class="tx-desc">{exp.description}</span>
                 <span class="tx-meta">
                   {#if exp.frequency === "weekly"}
                     Cada {[
@@ -518,11 +537,10 @@
                 class="currency-opt-btn {dash.finance.localCurrency === opt
                   ? 'active'
                   : ''}"
-                onclick={() => dash.setLocalCurrency(opt)}>{opt}</button
+                onclick={() => handleCurrencySelection(opt)}>{opt}</button
               >
             {/each}
           </div>
-          <p class="hint">Esta es tu moneda de base para cálculos.</p>
         </div>
 
         <SalaryConfig
@@ -534,76 +552,78 @@
     </section>
   {/if}
 
-  <!-- ─── Expandable FAB ──────────────────────────────────────────────────── -->
-  <div class="expandable-fab">
-    <div
-      class="fab-overlay"
-      class:open={fabOpen}
-      onclick={() => (fabOpen = false)}
-      role="button"
-      tabindex="0"
-      onkeydown={(e) => {
-        if (e.key === "Enter" || e.key === " ") fabOpen = false;
-      }}
-      aria-label="Cerrar menú flotante"
-    ></div>
-    <div class="fab-options" class:open={fabOpen}>
-      <button
-        class="fab-option"
-        onclick={() => {
-          dash.ui.showSavingsModal = true;
-          fabOpen = false;
+  {#if dash.finance.salaryUSD > 0}
+    <!-- ─── Expandable FAB ──────────────────────────────────────────────────── -->
+    <div class="expandable-fab">
+      <div
+        class="fab-overlay"
+        class:open={fabOpen}
+        onclick={() => (fabOpen = false)}
+        role="button"
+        tabindex="0"
+        onkeydown={(e) => {
+          if (e.key === "Enter" || e.key === " ") fabOpen = false;
         }}
-      >
-        <span class="option-label">Proyección</span>
-        <div class="option-btn bg-rocket">🚀</div>
-      </button>
+        aria-label="Cerrar menú flotante"
+      ></div>
+      <div class="fab-options" class:open={fabOpen}>
+        <button
+          class="fab-option"
+          onclick={() => {
+            dash.ui.showSavingsModal = true;
+            fabOpen = false;
+          }}
+        >
+          <span class="option-label">Proyección</span>
+          <div class="option-btn bg-rocket">🚀</div>
+        </button>
+        <button
+          class="fab-option"
+          onclick={() => {
+            dash.ui.showTransactionModal = true;
+            fabOpen = false;
+          }}
+        >
+          <span class="option-label">Movimiento</span>
+          <div class="option-btn">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="18"
+              height="18"
+            >
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
+              ></path>
+            </svg>
+          </div>
+        </button>
+      </div>
       <button
-        class="fab-option"
-        onclick={() => {
-          dash.ui.showTransactionModal = true;
-          fabOpen = false;
-        }}
+        class="main-fab"
+        class:open={fabOpen}
+        onclick={() => (fabOpen = !fabOpen)}
+        aria-label="Menú de opciones rápidas"
+        aria-expanded={fabOpen}
       >
-        <span class="option-label">Movimiento</span>
-        <div class="option-btn">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            width="18"
-            height="18"
-          >
-            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
-            ></path>
-          </svg>
-        </div>
+        <svg
+          class="plus-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
       </button>
     </div>
-    <button
-      class="main-fab"
-      class:open={fabOpen}
-      onclick={() => (fabOpen = !fabOpen)}
-      aria-label="Menú de opciones rápidas"
-      aria-expanded={fabOpen}
-    >
-      <svg
-        class="plus-icon"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-    </button>
-  </div>
+  {/if}
 
   <BottomNav />
 
@@ -784,6 +804,37 @@
           class="add-btn"
           style="background: rgba(255, 60, 60, 0.2); color: #ff4d4d; flex: 1;"
           onclick={confirmTxDelete}>Eliminar</button
+        >
+      </div>
+    </div>
+  </Modal>
+
+  <!-- Confirm Currency Change Modal -->
+  <Modal
+    isOpen={showCurrencyConfirmModal}
+    close={() => (showCurrencyConfirmModal = false)}
+    title="¿Cambiar Divisa Local?"
+    minimal={true}
+  >
+    <div style="text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 10px;">⚠️</div>
+      <h3 style="margin: 0 0 10px;">¿Cambiar a {pendingCurrency}?</h3>
+      <p style="margin-bottom: 25px; color: var(--text-dim);">
+        Al cambiar la divisa local, <strong>se borrarán permanentemente</strong>
+        todos tus movimientos, gastos fijos y configuración de salario actuales.<br
+        /><br />
+        Esto es necesario para mantener la coherencia de tus finanzas.
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button
+          class="add-btn"
+          style="background: var(--surface-light); color: var(--text-color); flex: 1;"
+          onclick={() => (showCurrencyConfirmModal = false)}>Cancelar</button
+        >
+        <button
+          class="add-btn"
+          style="background: rgba(255, 60, 60, 0.2); color: #ff4d4d; flex: 1;"
+          onclick={confirmCurrencyChange}>Confirmar y Borrar</button
         >
       </div>
     </div>

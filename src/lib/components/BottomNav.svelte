@@ -1,5 +1,6 @@
 <script lang="ts">
   import { uiState } from "$lib/stores/ui.svelte";
+  import { financeState } from "$lib/stores/finance.svelte";
 
   const tabs = [
     {
@@ -27,13 +28,76 @@
 
 <nav class="bottom-nav">
   {#each tabs as tab}
-    <button
-      class="nav-item {uiState.activeTab === tab.id ? 'active' : ''}"
-      onclick={() => (uiState.activeTab = tab.id)}
-      aria-label="Ir a {tab.label}"
-    >
-      <span class="icon">{@html tab.icon}</span>
-      <span class="label">{tab.label}</span>
-    </button>
+    {#if tab.id !== "recurring" || financeState.salaryUSD > 0}
+      <button
+        class="nav-item {uiState.activeTab === tab.id ? 'active' : ''}"
+        onclick={() => (uiState.activeTab = tab.id)}
+        aria-label="Ir a {tab.label}"
+      >
+        <span class="icon">{@html tab.icon}</span>
+        <span class="label">{tab.label}</span>
+      </button>
+    {/if}
   {/each}
 </nav>
+
+<style>
+  .bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-color);
+    padding: 12px 0 24px 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1;
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .nav-item.active {
+    color: var(--primary);
+    transform: translateY(-2px);
+  }
+
+  .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+  }
+
+  .nav-item:active .icon {
+    transform: scale(0.9);
+  }
+
+  .label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 480px) {
+    .label {
+      font-size: 0.65rem;
+    }
+  }
+</style>

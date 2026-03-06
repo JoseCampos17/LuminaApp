@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
  pub struct SalaryInfo {
      pub amount: f64,
      pub currency: String,
+     pub frequency: String,
  }
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -44,7 +45,8 @@ fn get_salary(
     let amount_str = db::get_setting(&conn, "biweekly_salary").map_err(|e| e.to_string())?;
     let amount = amount_str.parse::<f64>().map_err(|e| e.to_string())?;
     let currency = db::get_setting(&conn, "biweekly_salary_currency").unwrap_or_else(|_| "COP".to_string());
-    Ok(SalaryInfo { amount, currency })
+    let frequency = db::get_setting(&conn, "salary_frequency").unwrap_or_else(|_| "quincena".to_string());
+    Ok(SalaryInfo { amount, currency, frequency })
 }
 
 #[tauri::command]
@@ -52,10 +54,12 @@ fn update_salary(
     state: tauri::State<'_, DbState>,
     amount: f64,
     currency: String,
+    frequency: String,
 ) -> Result<(), String> {
     let conn = state.0.lock().map_err(|e| e.to_string())?;
     db::update_setting(&conn, "biweekly_salary", &amount.to_string()).map_err(|e| e.to_string())?;
     db::update_setting(&conn, "biweekly_salary_currency", &currency).map_err(|e| e.to_string())?;
+    db::update_setting(&conn, "salary_frequency", &frequency).map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -94,6 +98,15 @@ fn delete_transaction(
 ) -> Result<(), String> {
     let conn = state.0.lock().map_err(|e| e.to_string())?;
     db::delete_transaction(&conn, &id).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn clear_all_data(
+    state: tauri::State<'_, db::DbState>,
+) -> Result<(), String> {
+    let conn = state.0.lock().map_err(|e| e.to_string())?;
+    db::clear_all_data(&conn).map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -156,6 +169,7 @@ pub fn run() {
             delete_recurring_expense,
             delete_transaction,
             update_transaction,
+            clear_all_data,
             send_notification
         ])
         .run(tauri::generate_context!())

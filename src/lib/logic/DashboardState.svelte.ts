@@ -13,6 +13,7 @@ import {
   displayRadarValue,
   displayVariableExpenses,
   toggleOptions,
+  clearAllData,
 } from "$lib/stores/finance.svelte";
 
 import {
@@ -54,6 +55,7 @@ export class DashboardState {
   displayRadarValue = displayRadarValue;
   displayVariableExpenses = displayVariableExpenses;
   toggleOptions = toggleOptions;
+  clearAllData = clearAllData;
 
   startEdit = startEdit;
   clearEdit = clearEdit;

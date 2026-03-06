@@ -21,9 +21,38 @@
   });
 </script>
 
-<div class="salary-box glass-card">
+<div class="salary-box glass-card" data-editing={state.isEditing}>
   <div class="info">
-    <span class="label">Tu Salario Quincenal en {props.currency} 💰</span>
+    <div class="header-row">
+      <span class="label">Tu Salario en {props.currency} 💰</span>
+      <div class="frequency-pill">
+        <button
+          class="pill-opt {(state.isEditing
+            ? state.editFrequency
+            : state.salaryFrequency) === 'quincena'
+            ? 'active'
+            : ''}"
+          onclick={() => {
+            if (state.isEditing) state.editFrequency = "quincena";
+          }}
+        >
+          Quincenal
+        </button>
+        <button
+          class="pill-opt {(state.isEditing
+            ? state.editFrequency
+            : state.salaryFrequency) === 'mes'
+            ? 'active'
+            : ''}"
+          onclick={() => {
+            if (state.isEditing) state.editFrequency = "mes";
+          }}
+        >
+          Mensual
+        </button>
+      </div>
+    </div>
+
     {#if state.isEditing}
       <div class="edit-mode">
         <input
@@ -48,8 +77,10 @@
       </div>
     {/if}
   </div>
-  <p class="hint">
-    Configura el monto en la moneda activa. Se convertirá automáticamente en el
-    radar.
-  </p>
+  {#if state.displayAmount === 0}
+    <p class="hint">
+      Configura el monto en la moneda activa. Se convertirá automáticamente en
+      el radar.
+    </p>
+  {/if}
 </div>

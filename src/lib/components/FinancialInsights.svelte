@@ -1,5 +1,6 @@
 <script lang="ts">
   import { FinancialInsightsState } from "$lib/logic/FinancialInsightsState.svelte";
+  import { uiState } from "$lib/stores/ui.svelte";
   import type { RecurringExpense } from "$lib/types";
 
   let props = $props<{
@@ -81,7 +82,13 @@
       </div>
     </div>
   {:else}
-    <div class="insight-card info glass-card">
+    <div
+      class="insight-card info glass-card clickable"
+      onclick={() => (uiState.activeTab = "settings")}
+      onkeydown={(e) => e.key === "Enter" && (uiState.activeTab = "settings")}
+      role="button"
+      tabindex="0"
+    >
       <div class="icon">⚙️</div>
       <div class="content">
         <h4>Configuración pendiente</h4>
@@ -93,3 +100,16 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .insight-card.clickable {
+    cursor: pointer;
+    transition:
+      transform 0.2s ease,
+      background 0.2s ease;
+  }
+  .insight-card.clickable:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.1);
+  }
+</style>
