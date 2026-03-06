@@ -84,7 +84,7 @@ Toca el botón del **cohete** para abrir el simulador:
 
 ## 💱 Moneda
 
-Usa el selector **COP / USD** en la parte superior para ver todos los valores convertidos al instante. Puedes editar las tasas de cambio en **Config → Tasas de Cambio**.
+Usa el selector **COP / USD** en la parte superior para ver todos los valores convertidos al instante. Las tasas de cambio se actualizan automáticamente desde internet cada 4 horas.
 
 ---
 
