@@ -1,0 +1,58 @@
+.salary-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-color: var(--neon-purple);
+}
+
+.salary-box .info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.salary-box .label {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.salary-box .amount {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--neon-green);
+}
+
+.salary-box .view-mode,
+.salary-box .edit-mode {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.salary-box input {
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  outline: none;
+  width: 150px;
+}
+
+.edit-btn,
+.save-btn {
+  background: rgba(188, 19, 254, 0.2);
+  border: 1px solid var(--neon-purple);
+  color: var(--neon-purple);
+  padding: 4px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.edit-btn:hover,
+.save-btn:hover {
+  background: var(--neon-purple);
+  color: white;
+}

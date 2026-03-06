@@ -1,0 +1,132 @@
+.recurring-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.recurring-manager .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.recurring-manager h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-dim);
+}
+
+.add-btn-small {
+  background: rgba(0, 243, 255, 0.1);
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-blue);
+  padding: 4px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  border-color: var(--neon-blue);
+}
+
+.selector-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.recurring-manager select {
+  flex-grow: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  outline: none;
+}
+
+.save-btn {
+  background: var(--neon-blue);
+  color: black;
+  font-weight: bold;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.expense-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exp-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+}
+
+.exp-item .desc {
+  font-weight: 600;
+  display: block;
+}
+
+.exp-item .meta {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.exp-item .right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.exp-item .amount {
+  color: #ff3e00;
+  font-weight: bold;
+}
+
+.del-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.view-more-btn {
+  background: none;
+  border: none;
+  color: var(--neon-blue);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 10px;
+  align-self: center;
+  width: 100%;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.view-more-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.recurring-manager input {
+  background: var(--input-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-color);
+  padding: 8px 12px;
+  border-radius: 8px;
+  outline: none;
+}

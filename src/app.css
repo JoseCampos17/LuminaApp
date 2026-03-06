@@ -1,0 +1,149 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-color: #0c0c0e;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --accent-color: #24c8db;
+  --text-color: #e0e0e0;
+  --text-dim: #a0a0a0;
+  --neon-green: #39ff14;
+  --neon-blue: #00f3ff;
+  --neon-purple: #bc13fe;
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.37);
+  --modal-bg: rgba(20, 20, 30, 0.95);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  font-family: "Inter", sans-serif;
+}
+
+html.light-theme {
+  --bg-color: #f7f9fc;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --accent-color: #007684;
+  --text-color: #1a1a1b;
+  --text-dim: #64748b;
+  --neon-green: #10b981;
+  --neon-blue: #0284c7;
+  --neon-purple: #7c3aed;
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --shadow-color: rgba(0, 0, 0, 0.04);
+  --modal-bg: #ffffff;
+  --input-bg: #fdfdfd;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px 0 var(--shadow-color);
+  transition:
+    background 0.3s,
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.sync-pulse {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 10px var(--neon-green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(57, 255, 20, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(57, 255, 20, 0);
+  }
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Swipe to Delete Animation ─── */
+.swipeable {
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: transform;
+  position: relative;
+  z-index: 2;
+  background: var(--surface-light);
+  border-radius: 12px;
+}
+
+.delete-backdrop {
+  position: absolute;
+  top: 0;
+  right: -60px; /* Hide outside the card initially */
+  height: 100%;
+  width: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 60, 60, 0.2);
+  border-radius: 0 12px 12px 0;
+  color: #ff4d4d;
+  font-size: 1.2rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 1;
+}
+
+.swipeable[style*="transform: translateX(-"] .delete-backdrop {
+  opacity: 1;
+}
+
+@keyframes shatter-fade {
+  0% {
+    opacity: 1;
+    transform: translateX(-80px) scale(1) rotate(0deg);
+    filter: blur(0px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateX(-150px) scale(0.9) rotate(-5deg);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-250px) scale(0.5) rotate(-15deg);
+    filter: blur(8px);
+  }
+}
+
+.disappearing {
+  pointer-events: none;
+  animation: shatter-fade 0.3s forwards cubic-bezier(0.5, 0, 0.1, 1);
+}

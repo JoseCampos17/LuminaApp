@@ -1,0 +1,104 @@
+/* ============================================================
+   Shared Component Utility Classes
+   ============================================================ */
+
+/* Glass Card — base surface for all cards/panels */
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 32px 0 var(--shadow-color);
+  transition:
+    background 0.3s,
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+/* Gradient Text — brand accent text */
+.gradient-text {
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Primary action button */
+.add-btn {
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+  color: white;
+  font-weight: bold;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+
+.add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+}
+
+/* Sync Pulse Indicator */
+.sync-pulse {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 10px var(--neon-green);
+  animation: pulse 2s infinite;
+}
+
+/* Shared form inputs/selects */
+input,
+select {
+  background: var(--input-bg);
+  border: 1.5px solid var(--glass-border);
+  color: var(--text-color);
+  padding: 10px 14px;
+  border-radius: 10px;
+  outline: none;
+  transition: all 0.3s;
+  font-size: 1rem;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--neon-blue);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 12px rgba(0, 243, 255, 0.2);
+}
+
+option {
+  background: var(--modal-bg);
+  color: var(--text-color);
+}
+
+/* Empty state text */
+.empty {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* Section hint text */
+.hint {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin: 0;
+  opacity: 0.7;
+}
+
+/* Divider line */
+.divider {
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  margin: 15px 0;
+  width: 100%;
+}

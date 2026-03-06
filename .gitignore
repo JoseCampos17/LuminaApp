@@ -1,0 +1,56 @@
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Node / SvelteKit ─────────────────────────────────────────────────────────
+node_modules/
+/build
+/.svelte-kit
+/package
+dist/
+
+# ─── Vite ─────────────────────────────────────────────────────────────────────
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ─── Environment / Secrets ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Rust / Cargo ─────────────────────────────────────────────────────────────
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# ─── Tauri ────────────────────────────────────────────────────────────────────
+src-tauri/gen/
+src-tauri/*.dmg
+src-tauri/*.exe
+src-tauri/*.msi
+src-tauri/*.deb
+src-tauri/*.AppImage
+src-tauri/*.app
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.suo
+*.user
+*.swp
+*.swo
+
+# ─── Temp / Misc ──────────────────────────────────────────────────────────────
+fix_ids.js
+*.tmp
+*.bak
+.cache/

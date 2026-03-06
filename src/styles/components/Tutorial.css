@@ -1,0 +1,61 @@
+.tutorial-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.tutorial-card {
+  max-width: 320px;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid var(--neon-blue);
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+}
+
+.tutorial-card h3,
+.tutorial-card h4 {
+  margin: 0 0 15px;
+  background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tutorial-card p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  margin-bottom: 25px;
+}
+
+.tutorial-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.tutorial-actions .link-btn {
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  color: var(--neon-blue);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 20px;
+  transition: all 0.25s ease;
+}
+
+.tutorial-actions .link-btn:hover {
+  background: rgba(0, 212, 255, 0.18);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}

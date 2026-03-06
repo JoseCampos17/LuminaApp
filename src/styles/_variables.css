@@ -1,0 +1,47 @@
+/* ============================================================
+   Design Tokens — Color, Typography & Surface Variables
+   ============================================================ */
+
+:root {
+  /* Background */
+  --bg-color: #0c0c0e;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --modal-bg: rgba(20, 20, 30, 0.95);
+  --input-bg: rgba(255, 255, 255, 0.05);
+
+  /* Brand / Neon */
+  --accent-color: #24c8db;
+  --neon-green: #39ff14;
+  --neon-blue: #00f3ff;
+  --neon-purple: #bc13fe;
+
+  /* Text */
+  --text-color: #e0e0e0;
+  --text-dim: #a0a0a0;
+
+  /* Surfaces */
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.37);
+
+  /* Typography */
+  font-family: "Inter", sans-serif;
+}
+
+/* Light Theme Override */
+html.light-theme {
+  --bg-color: #f7f9fc;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --modal-bg: #ffffff;
+  --input-bg: #fdfdfd;
+
+  --accent-color: #007684;
+  --neon-green: #10b981;
+  --neon-blue: #0284c7;
+  --neon-purple: #7c3aed;
+
+  --text-color: #1a1a1b;
+  --text-dim: #64748b;
+
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --shadow-color: rgba(0, 0, 0, 0.04);
+}

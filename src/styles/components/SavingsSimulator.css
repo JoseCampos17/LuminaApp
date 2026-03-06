@@ -1,0 +1,92 @@
+.simulator-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 20px;
+  border-color: var(--neon-blue);
+  background: var(--card-bg);
+}
+
+.sim-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--neon-blue);
+}
+
+.sim-header .subtitle {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.control-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  align-items: center;
+}
+
+.save-amount {
+  color: var(--neon-green);
+  font-weight: bold;
+}
+
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 5px;
+  background: var(--input-bg);
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--neon-blue);
+  box-shadow: 0 0 10px var(--neon-blue);
+  cursor: pointer;
+}
+
+.projection-results {
+  background: var(--input-bg);
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px dashed var(--glass-border);
+}
+
+.result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.period {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.total-amount {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.motivation {
+  font-size: 0.75rem;
+  margin-top: 10px;
+  font-style: italic;
+  color: var(--text-dim);
+  opacity: 0.8;
+}
