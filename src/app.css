@@ -1,6 +1,20 @@
 * {
   box-sizing: border-box;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  /* iOS: no callout menu on long press */
+  -webkit-tap-highlight-color: transparent;
+  /* remove blue flash on tap */
 }
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  /* re-enable selection only inside inputs */
+}
+
 
 :root {
   --bg-color: #0c0c0e;
@@ -69,10 +83,12 @@ body {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7);
   }
+
   70% {
     transform: scale(1);
     box-shadow: 0 0 0 10px rgba(57, 255, 20, 0);
   }
+
   100% {
     transform: scale(0.95);
     box-shadow: 0 0 0 0 rgba(57, 255, 20, 0);
@@ -106,7 +122,8 @@ h3 {
 .delete-backdrop {
   position: absolute;
   top: 0;
-  right: -60px; /* Hide outside the card initially */
+  right: -60px;
+  /* Hide outside the card initially */
   height: 100%;
   width: 60px;
   display: flex;
@@ -131,11 +148,13 @@ h3 {
     transform: translateX(-80px) scale(1) rotate(0deg);
     filter: blur(0px);
   }
+
   50% {
     opacity: 0.8;
     transform: translateX(-150px) scale(0.9) rotate(-5deg);
     filter: blur(2px);
   }
+
   100% {
     opacity: 0;
     transform: translateX(-250px) scale(0.5) rotate(-15deg);
