@@ -1,6 +1,10 @@
 <script lang="ts">
   import { DashboardState } from "$lib/logic/DashboardState.svelte";
-  import { deleteTransaction } from "$lib/stores/finance.svelte";
+  import {
+    deleteTransaction,
+    migrateCurrency,
+    clearAllData,
+  } from "$lib/stores/finance.svelte";
 
   // ── Components ────────────────────────────────────────────────────────────
   import Modal from "$lib/components/Modal.svelte";
@@ -14,6 +18,7 @@
   import ThemeToggle from "$lib/components/ThemeToggle.svelte";
   import Tutorial from "$lib/components/Tutorial.svelte";
   import BottomNav from "$lib/components/BottomNav.svelte";
+  import { fade } from "svelte/transition";
 
   const dash = new DashboardState();
   let fabOpen = $state(false);
@@ -27,6 +32,7 @@
   // Currency change confirmation
   let showCurrencyConfirmModal = $state(false);
   let pendingCurrency = $state<string | null>(null);
+  let showClearAllConfirmModal = $state(false);
 
   function handleCurrencySelection(opt: string) {
     if (dash.finance.localCurrency === opt) return;
@@ -36,11 +42,17 @@
 
   async function confirmCurrencyChange() {
     if (pendingCurrency) {
-      await dash.clearAllData();
-      dash.setLocalCurrency(pendingCurrency);
+      const oldCurrency = dash.finance.localCurrency;
+      await migrateCurrency(oldCurrency, pendingCurrency);
       showCurrencyConfirmModal = false;
       pendingCurrency = null;
     }
+  }
+
+  async function confirmClearAll() {
+    await clearAllData();
+    showClearAllConfirmModal = false;
+    dash.ui.activeTab = "home"; // Take user home after reset
   }
 
   function loadMore() {
@@ -267,18 +279,327 @@
     }
   }
 
-  const categories = [
-    { name: "Todos", icon: "📋" },
-    { name: "Vivienda", icon: "🏠" },
-    { name: "Comida", icon: "🥗" },
-    { name: "Transporte", icon: "🚌" },
-    { name: "Entretenimiento", icon: "🎮" },
-    { name: "Salud", icon: "🏥" },
-    { name: "Educación", icon: "🎓" },
-    { name: "Servicios", icon: "💸" },
-    { name: "Seguros", icon: "🛡" },
-    { name: "Otros", icon: "🧩" },
+  import {
+    categoriesState,
+    addCategory,
+    removeCategory,
+  } from "$lib/stores/categories.svelte";
+  import { moveCategory } from "$lib/stores/categories.svelte";
+  let selectedFolder = $state<string | null>(null);
+
+  // ─── Drag and Drop State ──────────────────────────────────────────
+  let draggedIndex = $state<number | null>(null);
+
+  // ─── Folder Deletion Confirmation State ──────────────────────────
+  let showFolderDeleteConfirm = $state(false);
+  let folderToMaybeDelete = $state<string | null>(null);
+
+  function requestDeleteFolder(name: string) {
+    const expensesCount = dash.finance.recurringExpenses.filter(
+      (e) =>
+        e.category === name ||
+        (name === "Otros" && (!e.category || e.category === "Otros")),
+    ).length;
+
+    if (expensesCount > 0) {
+      folderToMaybeDelete = name;
+      showFolderDeleteConfirm = true;
+    } else {
+      removeCategory(name);
+    }
+  }
+
+  async function confirmDeleteFolder() {
+    if (folderToMaybeDelete) {
+      // 1. Delete associated expenses in the DB
+      const expensesToDelete = dash.finance.recurringExpenses.filter(
+        (e) =>
+          e.category === folderToMaybeDelete ||
+          (folderToMaybeDelete === "Otros" &&
+            (!e.category || e.category === "Otros")),
+      );
+
+      for (const exp of expensesToDelete) {
+        await deleteTransaction(exp.id); // This already reloads data
+      }
+
+      // 2. Remove the category folder
+      removeCategory(folderToMaybeDelete);
+
+      // 3. Close and cleanup
+      showFolderDeleteConfirm = false;
+      folderToMaybeDelete = null;
+      await dash.loadData();
+    }
+  }
+
+  function handleDragStart(e: DragEvent, index: number) {
+    draggedIndex = index;
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      // Required for some browsers
+      e.dataTransfer.setData("text/plain", index.toString());
+    }
+    // Add a class for visual feedback
+    (e.target as HTMLElement).classList.add("dragging");
+  }
+
+  function handleDragOver(e: DragEvent) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    return false;
+  }
+
+  function handleDrop(e: DragEvent, targetIndex: number) {
+    if (e.stopPropagation) e.stopPropagation();
+    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+      moveCategory(draggedIndex, targetIndex);
+    }
+    draggedIndex = null;
+    return false;
+  }
+
+  function handleDragEnd(e: DragEvent) {
+    (e.target as HTMLElement).classList.remove("dragging");
+    draggedIndex = null;
+  }
+
+  let showNewFolderModal = $state(false);
+  let newFolderName = $state("");
+  let newFolderIcon = $state("📁");
+  let showEmojiPicker = $state(false);
+
+  const commonEmojis = [
+    // Finanzas (Muchos más)
+    "💸",
+    "💰",
+    "💵",
+    "💳",
+    "🪙",
+    "🏦",
+    "📈",
+    "📉",
+    "🏷️",
+    "🪙",
+    "💹",
+    "💴",
+    "💶",
+    "💷",
+    "🤑",
+    "💎",
+    "⚖️",
+    "🗝️",
+    "🔋",
+    "🏮",
+    // Caritas y Expresiones
+    "😊",
+    "🥰",
+    "😎",
+    "🤩",
+    "🤔",
+    "🧐",
+    "🥳",
+    "😀",
+    "😇",
+    "😋",
+    "😜",
+    "🤭",
+    "😌",
+    "😴",
+    "🌞",
+    "✨",
+    "🔥",
+    "🌈",
+    "⭐",
+    "🍀",
+    // Corazones
+    "❤️",
+    "💖",
+    "💙",
+    "💚",
+    "💛",
+    "🧡",
+    "💜",
+    "🖤",
+    "🤍",
+    "🤎",
+    "💘",
+    "💝",
+    "❣️",
+    "💟",
+    // Animales (Más variedad)
+    "🐶",
+    "🐱",
+    "🐭",
+    "🐹",
+    "🐰",
+    "🦊",
+    "🐻",
+    "🐼",
+    "🐨",
+    "🐯",
+    "🦁",
+    "🐮",
+    "🐷",
+    "🐸",
+    "🐵",
+    "🐧",
+    "🐦",
+    "🐤",
+    "🦆",
+    "🦅",
+    "🦉",
+    "🦋",
+    "🐌",
+    "🐞",
+    "🐜",
+    "🦟",
+    "🐝",
+    "🐢",
+    "🐍",
+    "🦖",
+    "🐙",
+    "🦑",
+    "🦐",
+    "🐡",
+    "🐠",
+    "🐬",
+    "🐳",
+    "🦈",
+    "🐘",
+    "🦏",
+    "🦒",
+    "🐃",
+    "🐄",
+    "🐎",
+    "🐏",
+    "🐐",
+    "🐫",
+    "🐪",
+    "🦘",
+    "🦥",
+    "🦦",
+    "🦨",
+    "🦡",
+    "🐾",
+    // Carpetas y Documentos
+    "📁",
+    "📂",
+    "💼",
+    "📝",
+    "📊",
+    "📋",
+    "📁",
+    "📂",
+    "🗂️",
+    "🗳️",
+    // Comida y Bebida
+    "🥗",
+    "🍎",
+    "🍗",
+    "🍕",
+    "🍔",
+    "🍦",
+    "🍰",
+    "☕",
+    "🍷",
+    "🍺",
+    "🍹",
+    "🛒",
+    "🥑",
+    "🥦",
+    "🍣",
+    "🌮",
+    "🥘",
+    "🍩",
+    "🍪",
+    "🍫",
+    // Vivienda y Hogar
+    "🏠",
+    "🏢",
+    "🏘️",
+    "🛋️",
+    "🛌",
+    "🚿",
+    "🛁",
+    "🔑",
+    "💡",
+    "🛠️",
+    "🧶",
+    "🧹",
+    "🧺",
+    "🏠",
+    // Transporte y Viajes
+    "🚌",
+    "🚗",
+    "🚕",
+    "🚚",
+    "🚲",
+    "🚀",
+    "✈️",
+    "🚢",
+    "🗺️",
+    "⛱️",
+    "🏖️",
+    "🏨",
+    "🚉",
+    "🚧",
+    // Salud y Bienestar
+    "🏥",
+    "💊",
+    "🩹",
+    "🩺",
+    "🏃",
+    "🧘",
+    "🚲",
+    "🍎",
+    "🧴",
+    "🧼",
+    "🦷",
+    // Entretenimiento y Hobbies
+    "🎮",
+    "🎬",
+    "🍿",
+    "🎭",
+    "🎨",
+    "🎤",
+    "🎧",
+    "⚽",
+    "🏀",
+    "🎸",
+    "🎹",
+    "🧩",
+    "🎳",
+    "🎲",
+    "🎯",
+    // Educación y Trabajo
+    "🎓",
+    "📚",
+    "🖊️",
+    "💻",
+    "📱",
+    "🖱️",
+    "🖨️",
+    "🔬",
+    "🔭",
+    "📅",
+    "📐",
+    "📎",
   ];
+
+  function openNewFolderModal() {
+    newFolderName = "";
+    newFolderIcon = "📁";
+    showNewFolderModal = true;
+    showEmojiPicker = false;
+  }
+
+  function confirmNewFolder() {
+    if (newFolderName.trim()) {
+      addCategory(newFolderName, newFolderIcon || "📁");
+      showNewFolderModal = false;
+    }
+  }
 </script>
 
 <main class="dashboard {dash.ui.activeTab}">
@@ -547,127 +868,164 @@
     <!-- ─── VIEW: RECURRING FIXED EXPENSES ─────────────────────────────── -->
     <section class="full-history">
       <div class="history-header">
-        <h2>Gastos Fijos</h2>
-        <button
-          class="add-btn-small"
-          onclick={() => (dash.ui.showRecurringModal = true)}
-        >
-          + Agregar
-        </button>
-      </div>
-
-      <div class="category-filters">
-        <div class="filters-scroll">
-          {#each categories as cat}
+        {#if selectedFolder === null}
+          <h2>Carpetas</h2>
+          <button class="add-btn-small" onclick={openNewFolderModal}>
+            + Nueva
+          </button>
+        {:else}
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
             <button
-              type="button"
-              class="filter-chip"
-              class:active={cat.name === "Todos"
-                ? dash.finance.filterCategories.length === 0
-                : dash.finance.filterCategories.includes(cat.name)}
-              onclick={() => {
-                if (cat.name === "Todos") {
-                  dash.finance.filterCategories = [];
-                } else {
-                  if (dash.finance.filterCategories.includes(cat.name)) {
-                    dash.finance.filterCategories =
-                      dash.finance.filterCategories.filter(
-                        (c: string) => c !== cat.name,
-                      );
-                  } else {
-                    dash.finance.filterCategories = [
-                      ...dash.finance.filterCategories,
-                      cat.name,
-                    ];
-                  }
-                }
-              }}
+              class="icon-btn"
+              onclick={() => (selectedFolder = null)}
+              aria-label="Volver"
+              style="background:none;border:none;color:inherit;cursor:pointer;padding:0;"
             >
-              <span class="chip-icon">{cat.icon}</span>
-              <span class="chip-label">{cat.name}</span>
+              <svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                stroke="currentColor"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                ><path d="M19 12H5"></path><polyline points="12 19 5 12 12 5"
+                ></polyline></svg
+              >
             </button>
-          {/each}
-        </div>
+            <h2>{selectedFolder}</h2>
+          </div>
+          <button
+            class="add-btn-small"
+            onclick={() => (dash.ui.showRecurringModal = true)}
+          >
+            + Agregar
+          </button>
+        {/if}
       </div>
 
-      <div class="history-container glass-card" style="overflow: hidden;">
-        <div class="history-list">
-          {#each dash.getFilteredRecurring() as exp}
+      {#if selectedFolder === null}
+        <div class="folders-grid">
+          {#each categoriesState.items as cat, i}
             <div
-              class="tx-item swipeable"
-              class:disappearing={disappearingId === exp.id}
-              style={swipingId === exp.id
-                ? `transform: translateX(${swipeOffset}px)`
-                : ""}
-              ontouchstart={(e) => handleTouchStart(e, exp.id)}
-              ontouchmove={handleTouchMove}
-              ontouchend={(e) => handleTouchEnd(e, exp)}
-              onmousedown={(e) => handleTouchStart(e, exp.id)}
-              onmousemove={handleTouchMove}
-              onmouseup={(e) => handleTouchEnd(e, exp)}
-              onmouseleave={(e) => handleTouchEnd(e, exp)}
-              onclick={() => handleClickEdit(exp)}
-              role="button"
-              tabindex="0"
-              onkeypress={(e) => e.key === "Enter" && handleClickEdit(exp)}
+              class="folder-wrapper"
+              draggable="true"
+              role="listitem"
+              ondragstart={(e) => handleDragStart(e, i)}
+              ondragover={handleDragOver}
+              ondrop={(e) => handleDrop(e, i)}
+              ondragend={handleDragEnd}
             >
-              <div class="tx-left">
-                <span class="tx-desc">{exp.description}</span>
-                <span class="tx-meta">
-                  <span class="tx-cat-badge">{exp.category || "Otros"}</span> •
-                  {#if exp.frequency === "weekly"}
-                    Cada {[
-                      "Domingo",
-                      "Lunes",
-                      "Martes",
-                      "Miércoles",
-                      "Jueves",
-                      "Viernes",
-                      "Sábado",
-                    ][exp.day_of_week ?? 0]}
-                  {:else}
-                    Día {exp.day_of_month} de cada mes
-                  {/if}
-                </span>
-              </div>
-              <div class="tx-right-actions">
-                <span class="tx-amount negative">
-                  {dash.formatLocalAmount(exp.amount)}
-                </span>
-                <button
-                  class="more-btn"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    openActionMenu(exp, "recurring");
-                  }}
-                  aria-label="Más acciones"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    width="18"
-                    height="18"
-                  >
-                    <circle cx="12" cy="12" r="1"></circle>
-                    <circle cx="12" cy="5" r="1"></circle>
-                    <circle cx="12" cy="19" r="1"></circle>
-                  </svg>
-                </button>
-              </div>
-              <div class="delete-backdrop"></div>
+              <button
+                class="folder-card glass-card"
+                onclick={() => (selectedFolder = cat.name)}
+              >
+                <div class="folder-icon">{cat.icon}</div>
+                <div class="folder-name">{cat.name}</div>
+                <div class="folder-count">
+                  {dash.finance.recurringExpenses.filter(
+                    (e) =>
+                      e.category === cat.name ||
+                      (cat.name === "Otros" &&
+                        (!e.category || e.category === "Otros")),
+                  ).length} gastos
+                </div>
+              </button>
+              <button
+                class="delete-folder-btn"
+                onclick={(e) => {
+                  e.stopPropagation();
+                  requestDeleteFolder(cat.name);
+                }}
+                title="Eliminar carpeta">×</button
+              >
             </div>
           {/each}
-          {#if dash.finance.recurringExpenses.length === 0}
-            <p class="empty">
-              No hay gastos fijos registrados. Agrega uno en el botón (+).
-            </p>
-          {/if}
+          <!-- Spacer to ensure last row is visible above bottom nav -->
+          <div style="grid-column: span 2; height: 1px;"></div>
         </div>
-      </div>
+      {:else}
+        <div class="history-container glass-card" style="overflow: hidden;">
+          <div class="history-list">
+            {#each dash.finance.recurringExpenses.filter((e) => e.category === selectedFolder || (selectedFolder === "Otros" && (!e.category || e.category === "Otros"))) as exp}
+              <div
+                class="tx-item swipeable"
+                class:disappearing={disappearingId === exp.id}
+                style={swipingId === exp.id
+                  ? `transform: translateX(${swipeOffset}px)`
+                  : ""}
+                ontouchstart={(e) => handleTouchStart(e, exp.id)}
+                ontouchmove={handleTouchMove}
+                ontouchend={(e) => handleTouchEnd(e, exp)}
+                onmousedown={(e) => handleTouchStart(e, exp.id)}
+                onmousemove={handleTouchMove}
+                onmouseup={(e) => handleTouchEnd(e, exp)}
+                onmouseleave={(e) => handleTouchEnd(e, exp)}
+                onclick={() => handleClickEdit(exp)}
+                role="button"
+                tabindex="0"
+                onkeypress={(e) => e.key === "Enter" && handleClickEdit(exp)}
+              >
+                <div class="tx-left">
+                  <span class="tx-desc">{exp.description}</span>
+                  <span class="tx-meta">
+                    <span class="tx-cat-badge">{exp.category || "Otros"}</span>
+                    •
+                    {#if exp.frequency === "weekly"}
+                      Cada {[
+                        "Domingo",
+                        "Lunes",
+                        "Martes",
+                        "Miércoles",
+                        "Jueves",
+                        "Viernes",
+                        "Sábado",
+                      ][exp.day_of_week ?? 0]}
+                    {:else}
+                      Día {exp.day_of_month} de cada mes
+                    {/if}
+                  </span>
+                </div>
+                <div class="tx-right-actions">
+                  <span class="tx-amount negative">
+                    {dash.formatLocalAmount(exp.amount)}
+                  </span>
+                  <button
+                    class="more-btn"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      openActionMenu(exp, "recurring");
+                    }}
+                    aria-label="Más acciones"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      width="18"
+                      height="18"
+                    >
+                      <circle cx="12" cy="12" r="1"></circle>
+                      <circle cx="12" cy="5" r="1"></circle>
+                      <circle cx="12" cy="19" r="1"></circle>
+                    </svg>
+                  </button>
+                </div>
+                <div class="delete-backdrop"></div>
+              </div>
+            {/each}
+            {#if dash.finance.recurringExpenses.filter((e) => e.category === selectedFolder || (selectedFolder === "Otros" && (!e.category || e.category === "Otros"))).length === 0}
+              <p class="empty">
+                No hay gastos fijos registrados en esta categoría.
+              </p>
+            {/if}
+          </div>
+        </div>
+      {/if}
     </section>
   {:else if dash.ui.activeTab === "settings"}
     <!-- ─── VIEW: SETTINGS ───────────────────────────────────────────────── -->
@@ -684,7 +1042,7 @@
               onclick={() => {
                 dash.ui.infoModalTitle = "Divisa Local";
                 dash.ui.infoModalText =
-                  "La divisa local es la moneda principal que usa Lumina para tus cálculos. ⚠️ Si la cambias, todos tus movimientos, gastos fijos y configuración de salario serán eliminados permanentemente.";
+                  "La divisa local es la moneda principal que usa Lumina para tus cálculos. 🔄 Si la cambias, tus movimientos, gastos fijos y salario se convertirán automáticamente al tipo de cambio actual.";
                 dash.ui.showInfoModal = true;
               }}
               aria-label="Más información sobre Divisa Local"
@@ -723,6 +1081,57 @@
           currencies={dash.finance.currencies}
           onSalaryUpdated={dash.loadData}
         />
+
+        <div
+          class="local-currency-box glass-card"
+          style="margin-top: 15px; border-color: rgba(255, 60, 60, 0.2);"
+        >
+          <span class="label" style="color: #ff4d4d;">
+            Zona de Peligro ⚠️
+            <button
+              type="button"
+              class="info-icon"
+              onclick={() => {
+                dash.ui.infoModalTitle = "Limpiar Todo";
+                dash.ui.infoModalText =
+                  "Esta acción eliminará permanentemente todos tus movimientos, gastos fijos y la configuración de tu salario. La aplicación quedará como nueva.";
+                dash.ui.showInfoModal = true;
+              }}
+              aria-label="Más información sobre Limpiar Todo"
+              ><svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                ><circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="#ff4d4d"
+                  stroke-width="1.5"
+                /><path
+                  d="M12 17v-5"
+                  stroke="#ff4d4d"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                /><circle
+                  cx="12"
+                  cy="7.5"
+                  r="1"
+                  fill="#ff4d4d"
+                  stroke="none"
+                /></svg
+              ></button
+            >
+          </span>
+          <div style="margin-top: 10px;">
+            <button
+              class="add-btn"
+              style="background: rgba(255, 60, 60, 0.2); color: #ff4d4d; border: 1px solid rgba(255, 60, 60, 0.3);"
+              onclick={() => (showClearAllConfirmModal = true)}
+              >Limpiar Todos los Datos</button
+            >
+          </div>
+        </div>
       </div>
     </section>
   {/if}
@@ -885,6 +1294,7 @@
           dash.loadData();
         }}
         initialExpense={dash.ui.editingRecurring}
+        fixedCategory={selectedFolder}
       />
     </div>
   </Modal>
@@ -988,17 +1398,19 @@
   <Modal
     isOpen={showCurrencyConfirmModal}
     close={() => (showCurrencyConfirmModal = false)}
-    title="¿Cambiar Divisa Local?"
+    title="¿Confirmar Cambio de Divisa?"
     minimal={true}
   >
     <div style="text-align: center;">
-      <div style="font-size: 2.5rem; margin-bottom: 10px;">⚠️</div>
-      <h3 style="margin: 0 0 10px;">¿Cambiar a {pendingCurrency}?</h3>
+      <div style="font-size: 2.5rem; margin-bottom: 10px;">🔄</div>
+      <h3 style="margin: 0 0 10px;">¿Convertir a {pendingCurrency}?</h3>
       <p style="margin-bottom: 25px; color: var(--text-dim);">
-        Al cambiar la divisa local, <strong>se borrarán permanentemente</strong>
-        todos tus movimientos, gastos fijos y configuración de salario actuales.<br
+        Al cambiar la divisa local, <strong
+          >convertiremos automáticamente</strong
+        >
+        todos tus movimientos, gastos fijos y salario al tipo de cambio actual.<br
         /><br />
-        Esto es necesario para mantener la coherencia de tus finanzas.
+        Tus datos permanecerán intactos, pero expresados en {pendingCurrency}.
       </p>
       <div style="display: flex; gap: 1rem; justify-content: center;">
         <button
@@ -1006,10 +1418,8 @@
           style="background: var(--surface-light); color: var(--text-color); flex: 1;"
           onclick={() => (showCurrencyConfirmModal = false)}>Cancelar</button
         >
-        <button
-          class="add-btn"
-          style="background: rgba(255, 60, 60, 0.2); color: #ff4d4d; flex: 1;"
-          onclick={confirmCurrencyChange}>Confirmar y Borrar</button
+        <button class="add-btn" style="flex: 1;" onclick={confirmCurrencyChange}
+          >Confirmar y Convertir</button
         >
       </div>
     </div>
@@ -1038,6 +1448,35 @@
         >
         <button class="add-btn" style="flex: 1;" onclick={confirmTxEdit}
           >Continuar</button
+        >
+      </div>
+    </div>
+  </Modal>
+
+  <!-- Confirm Clear All Data Modal -->
+  <Modal
+    isOpen={showClearAllConfirmModal}
+    close={() => (showClearAllConfirmModal = false)}
+    title="¿Limpiar Todo el Sistema?"
+    minimal={true}
+  >
+    <div style="text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 10px;">💣</div>
+      <h3 style="margin: 0 0 10px; color: #ff4d4d;">¡Atención!</h3>
+      <p style="margin-bottom: 25px; color: var(--text-dim);">
+        Estás a punto de <strong>borrar absolutamente todo</strong>.<br /><br />
+        Esta acción no se puede deshacer. ¿Deseas continuar?
+      </p>
+      <div style="display: flex; gap: 1rem; justify-content: center;">
+        <button
+          class="add-btn"
+          style="background: var(--surface-light); color: var(--text-color); flex: 1;"
+          onclick={() => (showClearAllConfirmModal = false)}>Cancelar</button
+        >
+        <button
+          class="add-btn"
+          style="background: #ff4d4d; color: white; flex: 1;"
+          onclick={confirmClearAll}>Borrar Todo</button
         >
       </div>
     </div>
@@ -1134,6 +1573,122 @@
       </div>
     </div>
   </Modal>
+
+  <!-- New Folder Modal -->
+  <Modal
+    isOpen={showFolderDeleteConfirm}
+    close={() => (showFolderDeleteConfirm = false)}
+    title="¿Borrar Carpeta?"
+    minimal={true}
+  >
+    <div class="delete-confirmation">
+      <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+      <p
+        style="margin-bottom: 10px; color: var(--text-color); font-weight: 600;"
+      >
+        Esta carpeta tiene gastos registrados.
+      </p>
+      <p class="warning-text">
+        Si la borras, se eliminarán permanentemente todos los gastos fijos
+        asociados a "{folderToMaybeDelete}".
+      </p>
+      <div class="modal-actions">
+        <button
+          class="btn-cancel"
+          onclick={() => (showFolderDeleteConfirm = false)}
+        >
+          Cancelar
+        </button>
+        <button class="btn-delete" onclick={confirmDeleteFolder}>
+          Borrar Todo
+        </button>
+      </div>
+    </div>
+  </Modal>
+
+  <Modal
+    isOpen={showNewFolderModal}
+    close={() => (showNewFolderModal = false)}
+    title="Nueva Carpeta"
+    minimal={true}
+  >
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+      <div class="selector-group">
+        <label
+          for="folderName"
+          style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 4px; display: block;"
+          >Nombre de la carpeta</label
+        >
+        <input
+          id="folderName"
+          type="text"
+          bind:value={newFolderName}
+          placeholder="Ej: Mascotas, Viajes..."
+          autocomplete="off"
+          class="modal-input"
+        />
+      </div>
+      <div class="selector-group">
+        <label
+          for="folderIcon"
+          style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 4px; display: block;"
+          >Emoji (Opcional)</label
+        >
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input
+            id="folderIcon"
+            type="text"
+            bind:value={newFolderIcon}
+            placeholder="📁"
+            maxlength="2"
+            class="modal-input"
+            style="width: 60px; text-align: center;"
+          />
+          <button
+            type="button"
+            class="add-btn"
+            style="width: auto; padding: 10px 15px; font-size: 0.85rem;"
+            onclick={() => (showEmojiPicker = !showEmojiPicker)}
+          >
+            {showEmojiPicker ? "Cerrar" : "Emojis"}
+          </button>
+        </div>
+
+        {#if showEmojiPicker}
+          <div
+            class="emoji-picker-grid glass-card"
+            transition:fade={{ duration: 150 }}
+          >
+            {#each commonEmojis as emoji}
+              <button
+                type="button"
+                class="emoji-btn"
+                onclick={() => {
+                  newFolderIcon = emoji;
+                  showEmojiPicker = false;
+                }}
+              >
+                {emoji}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+      <div style="display: flex; gap: 1rem; margin-top: 10px;">
+        <button
+          class="add-btn btn-cancel"
+          style="flex: 1;"
+          onclick={() => (showNewFolderModal = false)}>Cancelar</button
+        >
+        <button
+          class="add-btn"
+          style="flex: 1;"
+          onclick={confirmNewFolder}
+          disabled={!newFolderName.trim()}>Crear</button
+        >
+      </div>
+    </div>
+  </Modal>
 </main>
 
 <style>
@@ -1163,8 +1718,9 @@
     border: none;
   }
   .btn-cancel {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--input-bg);
     color: var(--text-color);
+    border: 1px solid var(--glass-border);
   }
   .btn-delete {
     background: #ff3e00;
@@ -1368,7 +1924,7 @@
     border-top: 1px solid var(--glass-border);
     display: flex;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--input-bg);
   }
 
   .load-more-btn {
@@ -1449,48 +2005,110 @@
     font-size: 1rem;
   }
 
-  /* Category Filters Styles (Final Polish) */
-  .category-filters {
-    padding: 0; /* Reduced padding to lower gap */
-    margin-bottom: -5px; /* Negative margin to suck the list up tighter */
+  /* Folders Grid Styles */
+  .folders-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 10px 15px 120px 15px; /* Added large bottom padding for scroll safe area */
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
   }
 
-  .filters-scroll {
+  .folder-wrapper {
+    position: relative;
     display: flex;
-    overflow-x: auto;
-    gap: 6px; /* Very tight gap */
-    padding: 5px 15px 15px 15px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
   }
 
-  .filters-scroll::-webkit-scrollbar {
-    display: none;
+  .folder-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    cursor: pointer;
+    border: 1px solid var(--glass-border);
+    background: var(--card-bg);
+    border-radius: 16px;
+    text-align: center;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+    width: 100%;
+    color: inherit;
   }
 
-  .filter-chip {
+  .folder-card:hover,
+  .folder-card:active {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+    background: var(--input-bg);
+  }
+
+  .folder-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+  }
+
+  .folder-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-color);
+  }
+
+  .folder-count {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .delete-folder-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: rgba(255, 77, 77, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
-    gap: 4px; /* Very tight internal gap */
-    padding: 6px 12px; /* Tighter padding */
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    color: var(--text-dim);
-    white-space: nowrap;
+    justify-content: center;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-weight: bold;
+    font-size: 1.1rem;
+    line-height: 1;
+    opacity: 0;
+    transition:
+      opacity 0.2s,
+      transform 0.2s;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(255, 77, 77, 0.4);
   }
 
-  .filter-chip.active {
-    background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
-    color: white;
-    border-color: transparent;
-    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
-    transform: translateY(-2px);
+  .delete-folder-btn:hover {
+    transform: scale(1.1);
+    background: #ff4d4d;
+  }
+
+  .folder-wrapper:hover .delete-folder-btn {
+    opacity: 1;
+  }
+
+  .folder-wrapper.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+
+  .folder-wrapper[draggable="true"] {
+    cursor: grab;
+  }
+
+  .folder-wrapper[draggable="true"]:active {
+    cursor: grabbing;
   }
 
   .tx-cat-badge {
@@ -1522,5 +2140,51 @@
   }
   .home-scroll-container::-webkit-scrollbar {
     display: none;
+  }
+
+  .modal-input {
+    width: 100%;
+    color: var(--text-color) !important;
+    background: var(--input-bg) !important;
+  }
+
+  .modal-input::placeholder {
+    color: var(--text-dim) !important;
+    opacity: 0.7;
+  }
+
+  .emoji-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+    padding: 12px;
+    margin-top: 10px;
+    max-height: 180px;
+    overflow-y: auto;
+    background: var(--input-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+  }
+
+  .emoji-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .emoji-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .full-history {
+    overflow: hidden;
+    min-height: 0;
   }
 </style>

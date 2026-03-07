@@ -1,7 +1,11 @@
 <script lang="ts">
   import { RecurringExpensesState } from "$lib/logic/RecurringExpensesState.svelte";
 
-  let props = $props<{ onUpdated: () => void; initialExpense?: any }>();
+  let props = $props<{
+    onUpdated: () => void;
+    initialExpense?: any;
+    fixedCategory?: string | null;
+  }>();
 
   const recurringState = new RecurringExpensesState({
     get onUpdated() {
@@ -12,22 +16,14 @@
     },
   });
 
-  const categories = [
-    { name: "Vivienda", icon: "🏠" },
-    { name: "Comida", icon: "🥗" },
-    { name: "Transporte", icon: "🚌" },
-    { name: "Entretenimiento", icon: "🎮" },
-    { name: "Salud", icon: "🏥" },
-    { name: "Educación", icon: "🎓" },
-    { name: "Servicios", icon: "💸" },
-    { name: "Seguros", icon: "🛡" },
-    { name: "Otros", icon: "🧩" },
-  ];
+  import { categoriesState } from "$lib/stores/categories.svelte";
 
   let selectedCategory = $state("Otros");
 
   $effect(() => {
-    if (props.initialExpense?.category) {
+    if (props.fixedCategory) {
+      selectedCategory = props.fixedCategory;
+    } else if (props.initialExpense?.category) {
       selectedCategory = props.initialExpense.category;
     } else {
       selectedCategory = "Otros";
@@ -53,21 +49,20 @@
       <select id="newFrequency" bind:value={recurringState.newFrequency}>
         <option value="monthly">Mensual</option>
         <option value="weekly">Semanal</option>
+        <option value="daily">Diario</option>
       </select>
     </div>
 
     {#if recurringState.newFrequency === "monthly"}
       <div class="selector-group">
         <label for="newDayOfMonth">Día del mes</label>
-        <input
-          id="newDayOfMonth"
-          type="number"
-          bind:value={recurringState.newDayOfMonth}
-          min="1"
-          max="31"
-        />
+        <select id="newDayOfMonth" bind:value={recurringState.newDayOfMonth}>
+          {#each Array.from({ length: 31 }, (_, i) => i + 1) as day}
+            <option value={day}>{day}</option>
+          {/each}
+        </select>
       </div>
-    {:else}
+    {:else if recurringState.newFrequency === "weekly"}
       <div class="selector-group">
         <label for="newDayOfWeek">Día de la semana</label>
         <select id="newDayOfWeek" bind:value={recurringState.newDayOfWeek}>
@@ -78,26 +73,28 @@
       </div>
     {/if}
 
-    <div class="selector-group">
-      <label for="category-grid">Categoría</label>
-      <div id="category-grid" class="category-grid">
-        {#each categories as cat}
-          <button
-            type="button"
-            class="cat-item"
-            class:active={selectedCategory === cat.name}
-            onclick={() => (selectedCategory = cat.name)}
-            title={cat.name}
-          >
-            <span class="cat-icon">{cat.icon}</span>
-            <span class="cat-label">{cat.name}</span>
-          </button>
-        {/each}
+    {#if !props.fixedCategory}
+      <div class="selector-group">
+        <label for="category-grid">Categoría</label>
+        <div id="category-grid" class="category-grid">
+          {#each categoriesState.items as cat}
+            <button
+              type="button"
+              class="cat-item"
+              class:active={selectedCategory === cat.name}
+              onclick={() => (selectedCategory = cat.name)}
+              title={cat.name}
+            >
+              <span class="cat-icon">{cat.icon}</span>
+              <span class="cat-label">{cat.name}</span>
+            </button>
+          {/each}
+        </div>
       </div>
-    </div>
+    {/if}
 
     <button
-      class="save-btn"
+      class="add-btn"
       onclick={() => recurringState.save(selectedCategory)}
     >
       {recurringState.editingId ? "Actualizar" : "Guardar Fijo"}

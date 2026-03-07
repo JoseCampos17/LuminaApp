@@ -4,7 +4,7 @@
 // ============================================================
 
 import { invoke } from "$lib/tauri";
-import { loadCurrencies, toUSD, formatAmount, fetchRates } from "$lib/currencies";
+import { loadCurrencies, toUSD, fromUSD, formatAmount, fetchRates } from "$lib/currencies";
 import type { CurrencyDef } from "$lib/currencies";
 import type { Transaction, RecurringExpense } from "$lib/types";
 
@@ -46,10 +46,12 @@ export function getFilteredRecurring() {
 
 // ─── Setters ─────────────────────────────────────────────────────────────────
 
-export function setLocalCurrency(code: string) {
+export function setLocalCurrency(code: string, skipPersistence: boolean = false) {
   financeState.localCurrency = code;
   financeState.currency = code;
-  localStorage.setItem("lumina_local_currency", code);
+  if (!skipPersistence) {
+    localStorage.setItem("lumina_local_currency", code);
+  }
 }
 
 export function handleRatesUpdated(updated: CurrencyDef[]) {
@@ -112,9 +114,11 @@ export function displayRecurring() {
   const monthly = isMonthly();
   return financeState.recurringExpenses.reduce((sum, e) => {
     const amtUSD = toUSD(e.amount, financeState.localCurrency, financeState.currencies);
-    return sum + (e.frequency === "weekly"
-      ? amtUSD * (monthly ? 4 : 2)
-      : amtUSD * (monthly ? 1 : 0.5));
+    return sum + (e.frequency === "daily"
+      ? amtUSD * (monthly ? 30 : 15)
+      : e.frequency === "weekly"
+        ? amtUSD * (monthly ? 4 : 2)
+        : amtUSD * (monthly ? 1 : 0.5));
   }, 0);
 }
 
@@ -185,6 +189,65 @@ export async function deleteTransaction(id: string) {
     await loadData();
   } catch (e) {
     console.error(e);
+  }
+}
+
+export async function migrateCurrency(oldCode: string, newCode: string) {
+  console.log(`[financeStore] Migrating from ${oldCode} to ${newCode}...`);
+  try {
+    // 1. Convert Salary
+    const salaryData = await invoke("get_salary") as any;
+    const oldSalaryAmt = typeof salaryData === "number" ? salaryData : salaryData.amount;
+    const salaryCurr = typeof salaryData === "number" ? "USD" : (salaryData.currency || "USD");
+
+    // If salary is in the old local currency, convert it
+    if (salaryCurr === oldCode) {
+      const usdAmt = toUSD(oldSalaryAmt, oldCode, financeState.currencies);
+      const newLocalAmt = fromUSD(usdAmt, newCode, financeState.currencies);
+      await invoke("update_salary", { amount: newLocalAmt, currency: newCode });
+    }
+
+    // 2. Convert Transactions
+    const txs = await invoke("get_transactions") as Transaction[];
+    for (const tx of txs) {
+      // Logic: we assume transactions were in the old localCurrency
+      const usd = toUSD(tx.amount, oldCode, financeState.currencies);
+      const newAmt = fromUSD(usd, newCode, financeState.currencies);
+      await invoke("update_transaction", {
+        id: tx.id,
+        amount: Math.round(newAmt),
+        category: tx.category,
+        description: tx.description,
+        date: tx.date
+      });
+    }
+
+    // 3. Convert Recurring Expenses
+    const recurrings = await invoke("get_recurring_expenses") as RecurringExpense[];
+    for (const re of recurrings) {
+      const usd = toUSD(re.amount, oldCode, financeState.currencies);
+      const newAmt = fromUSD(usd, newCode, financeState.currencies);
+
+      // Since we don't have a direct "update_recurring_expense", we delete and re-add 
+      // OR we just use add_recurring_expense which might overwrite if ID matches?
+      // Looking at RecurringExpensesState.svelte.ts, it deletes then adds.
+      await invoke("delete_recurring_expense", { id: re.id });
+      await invoke("add_recurring_expense", {
+        expense: {
+          ...re,
+          amount: Math.round(newAmt)
+        }
+      });
+    }
+
+    // 4. Update the local currency state and persistence
+    setLocalCurrency(newCode);
+
+    // 5. Reload exactly what we need
+    await loadData();
+    console.log("[financeStore] Migration complete.");
+  } catch (e) {
+    console.error("[financeStore] migrateCurrency error:", e);
   }
 }
 

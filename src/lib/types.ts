@@ -14,7 +14,7 @@ export interface RecurringExpense {
   id: string;
   amount: number;
   description: string;
-  frequency: "monthly" | "weekly";
+  frequency: "monthly" | "weekly" | "daily";
   day_of_month?: number | null;
   day_of_week?: number | null;
   category?: string;
