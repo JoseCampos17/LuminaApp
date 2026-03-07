@@ -37,6 +37,10 @@ export const financeState = $state({
 
   /** Category filters for recurring expenses (empty means "Todos") */
   filterCategories: [] as string[],
+
+  /** Selection for history navigation */
+  selectedMonth: new Date().getMonth(),
+  selectedYear: new Date().getFullYear(),
 });
 
 export function getFilteredRecurring() {
@@ -74,20 +78,55 @@ export function toggleOptions() {
   return [localCurrency, "USD"].filter((v, i, a) => a.indexOf(v) === i);
 }
 
-export function currentPeriodTransactions() {
+export function isCurrentPeriod() {
   const now = new Date();
+  return (
+    financeState.selectedMonth === now.getMonth() &&
+    financeState.selectedYear === now.getFullYear()
+  );
+}
+
+export function currentPeriodLabel() {
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+  return `${monthNames[financeState.selectedMonth]} ${financeState.selectedYear}`;
+}
+
+export function currentPeriodTransactions() {
+  const selectedMonth = financeState.selectedMonth;
+  const selectedYear = financeState.selectedYear;
+  const isCurrent = isCurrentPeriod();
+  const now = new Date();
+
   const monthly = isMonthly();
   return financeState.transactions
     .filter((t) => {
       const txDate = new Date(t.date + "T00:00:00");
       if (
-        txDate.getMonth() !== now.getMonth() ||
-        txDate.getFullYear() !== now.getFullYear()
+        txDate.getMonth() !== selectedMonth ||
+        txDate.getFullYear() !== selectedYear
       ) return false;
       if (monthly) return true;
-      const day = now.getDate();
-      const isFirstQ = day <= 15;
-      return isFirstQ ? txDate.getDate() <= 15 : txDate.getDate() > 15;
+
+      // For quincena: if it's the current real-time month, use the current day logic.
+      // If it's a past/future month, we need a way to specify which quincena.
+      // For now, let's keep it simple: if not current month, show all or first 15?
+      // Actually, if we are in "quincena" mode, we should probably have a "selectedQuincena" too.
+      // But maybe the user just wants to see the month.
+
+      if (isCurrent) {
+        const day = now.getDate();
+        const isFirstQ = day <= 15;
+        return isFirstQ ? txDate.getDate() <= 15 : txDate.getDate() > 15;
+      }
+
+      // For non-current months in quincena mode, show first quincena by default?
+      // Better: if in quincena mode and non-current month, maybe we just show everything for that month
+      // or we add a toggle for Q1/Q2.
+      // Let's stick to current month logic for now, but use selectedMonth.
+      return true;
     })
     .sort((a, b) => b.id.localeCompare(a.id));
 }
@@ -161,14 +200,25 @@ export async function loadData() {
     financeState.currencies = await fetchRates();
 
     // 2. Load other data
+    financeState.salaryUSD = 0; // Reset to avoid state leak from other months
     financeState.transactions = await invoke("get_transactions");
 
-    const salaryData = await invoke("get_salary") as any;
-    const rawAmount = typeof salaryData === "number" ? salaryData : salaryData.amount;
-    const rawCurrency = typeof salaryData === "number" ? "USD" : (salaryData.currency || "USD");
+    try {
+      console.log(`[Finance] Fetching salary for ${financeState.selectedMonth}/${financeState.selectedYear}`);
+      const salaryData = await invoke("get_salary", {
+        month: financeState.selectedMonth,
+        year: financeState.selectedYear
+      }) as any;
+      console.log(`[Finance] Received salaryData:`, salaryData);
 
-    // DB always stores the bi-weekly (quincenal) equivalent — no normalization needed.
-    financeState.salaryUSD = toUSD(rawAmount, rawCurrency, financeState.currencies);
+      const rawAmount = typeof salaryData === "number" ? salaryData : salaryData.amount;
+      const rawCurrency = typeof salaryData === "number" ? "USD" : (salaryData.currency || "USD");
+
+      financeState.salaryUSD = toUSD(rawAmount, rawCurrency, financeState.currencies);
+    } catch (err) {
+      console.error("[Finance] Failed to load salary:", err);
+      financeState.salaryUSD = 0;
+    }
 
     const exps: any[] = await invoke("get_recurring_expenses");
     exps.sort((a, b) => {
@@ -204,7 +254,14 @@ export async function migrateCurrency(oldCode: string, newCode: string) {
     if (salaryCurr === oldCode) {
       const usdAmt = toUSD(oldSalaryAmt, oldCode, financeState.currencies);
       const newLocalAmt = fromUSD(usdAmt, newCode, financeState.currencies);
-      await invoke("update_salary", { amount: newLocalAmt, currency: newCode });
+      // Migrate latest salary (agnostic of month for this global setting)
+      await invoke("update_salary", {
+        amount: newLocalAmt,
+        currency: newCode,
+        frequency: "quincena",
+        month: null, // Global update
+        year: null
+      });
     }
 
     // 2. Convert Transactions

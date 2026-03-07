@@ -55,10 +55,12 @@
 
 /* Shared form inputs/selects */
 input,
-select {
+select,
+textarea {
   background: var(--input-bg);
   border: 1.5px solid var(--glass-border);
-  color: var(--text-color);
+  color: var(--text-color) !important;
+  -webkit-text-fill-color: var(--text-color) !important;
   padding: 10px 14px;
   border-radius: 10px;
   outline: none;
@@ -74,8 +76,15 @@ select:focus {
 }
 
 option {
-  background: var(--modal-bg);
-  color: var(--text-color);
+  background: var(--modal-bg) !important;
+  color: var(--text-color) !important;
+  -webkit-text-fill-color: var(--text-color) !important;
+}
+
+::placeholder {
+  color: var(--text-dim);
+  opacity: 1;
+  /* Firefox sets lower opacity by default */
 }
 
 /* Empty state text */
@@ -121,7 +130,8 @@ option {
   background: transparent;
   border: 1.5px solid rgba(0, 212, 255, 0.35);
   color: rgba(0, 212, 255, 0.7);
-  font-size: 0;                /* Hide any text */
+  font-size: 0;
+  /* Hide any text */
   cursor: pointer;
   flex-shrink: 0;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
@@ -156,9 +166,11 @@ option {
 .info-icon::after {
   content: attr(data-tooltip);
   position: absolute;
-  bottom: calc(100% + 10px); /* Appear above the icon */
+  bottom: calc(100% + 10px);
+  /* Appear above the icon */
   right: 50%;
-  transform: translateX(50%); /* Centered exactly above the icon */
+  transform: translateX(50%);
+  /* Centered exactly above the icon */
   width: max-content;
   max-width: 200px;
   background: rgba(15, 23, 42, 0.98);
@@ -183,12 +195,15 @@ option {
 .info-icon::before {
   content: '';
   position: absolute;
-  bottom: calc(100% + 4px); /* Arrow pointing down from above */
+  bottom: calc(100% + 4px);
+  /* Arrow pointing down from above */
   right: 50%;
-  transform: translateX(50%); /* Centered arrow */
+  transform: translateX(50%);
+  /* Centered arrow */
   border-width: 6px;
   border-style: solid;
-  border-color: rgba(15, 23, 42, 0.98) transparent transparent transparent; /* Downward arrow */
+  border-color: rgba(15, 23, 42, 0.98) transparent transparent transparent;
+  /* Downward arrow */
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, transform 0.2s ease;

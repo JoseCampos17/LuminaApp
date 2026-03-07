@@ -1,11 +1,12 @@
 import { invoke } from "$lib/tauri";
+import { financeState } from "$lib/stores/finance.svelte";
 
 export class TransactionFormState {
   description = $state("");
   amount = $state(0);
   category = $state("Comida");
   type = $state("gasto");
-  date = $state(new Date().toISOString().split("T")[0]);
+  date = $state("");
 
   constructor(
     private props: {
@@ -19,6 +20,27 @@ export class TransactionFormState {
       this.category = props.editData.category || "Comida";
       this.type = props.editData.amount > 0 ? "ingreso" : "gasto";
       this.date = props.editData.date || new Date().toISOString().split("T")[0];
+    } else {
+      this.date = this.getDefaultDate();
+    }
+  }
+
+  private getDefaultDate() {
+    const now = new Date();
+    const isCurrentMonth =
+      financeState.selectedMonth === now.getMonth() &&
+      financeState.selectedYear === now.getFullYear();
+
+    if (isCurrentMonth) {
+      return now.toISOString().split("T")[0];
+    } else {
+      // First day of selected period
+      const d = new Date(financeState.selectedYear, financeState.selectedMonth, 1);
+      // Ensure local time split
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
   }
 

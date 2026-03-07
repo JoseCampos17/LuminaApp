@@ -90,6 +90,11 @@
           placeholder="Monto {props.currency}"
           min="0"
           onfocus={(e) => e.currentTarget.select()}
+          onkeydown={(e) => {
+            if (["e", "E", "+", "-"].includes(e.key)) {
+              e.preventDefault();
+            }
+          }}
         />
         <button class="save-btn" onclick={state.saveSalary}>Guardar</button>
       </div>

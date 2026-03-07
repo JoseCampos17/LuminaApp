@@ -3,6 +3,7 @@
    ============================================================ */
 
 :root {
+  color-scheme: dark;
   /* Background */
   --bg-color: #0c0c0e;
   --card-bg: rgba(255, 255, 255, 0.05);
@@ -29,6 +30,7 @@
 
 /* Light Theme Override */
 html.light-theme {
+  color-scheme: light;
   --bg-color: #f7f9fc;
   --card-bg: rgba(255, 255, 255, 0.9);
   --modal-bg: #ffffff;
@@ -44,4 +46,24 @@ html.light-theme {
 
   --glass-border: rgba(0, 0, 0, 0.05);
   --shadow-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Pink Theme Override */
+html.pink-theme {
+  color-scheme: light;
+  --bg-color: #ffe4e1;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --modal-bg: #fff0f5;
+  --input-bg: #fffafa;
+
+  --accent-color: #ff69b4;
+  --neon-green: #ff1493;
+  --neon-blue: #db7093;
+  --neon-purple: #c71585;
+
+  --text-color: #4a0e2e;
+  --text-dim: #8b5a74;
+
+  --glass-border: rgba(255, 105, 180, 0.2);
+  --shadow-color: rgba(255, 105, 180, 0.1);
 }

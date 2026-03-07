@@ -15,9 +15,11 @@
   import RecurringExpenses from "$lib/components/RecurringExpenses.svelte";
   import SavingsSimulator from "$lib/components/SavingsSimulator.svelte";
   import FinancialInsights from "$lib/components/FinancialInsights.svelte";
+  import SalaryHistoryLog from "$lib/components/SalaryHistoryLog.svelte";
   import ThemeToggle from "$lib/components/ThemeToggle.svelte";
   import Tutorial from "$lib/components/Tutorial.svelte";
   import BottomNav from "$lib/components/BottomNav.svelte";
+  import PeriodSelector from "$lib/components/PeriodSelector.svelte";
   import { fade } from "svelte/transition";
 
   const dash = new DashboardState();
@@ -55,6 +57,21 @@
     dash.ui.activeTab = "home"; // Take user home after reset
   }
 
+  const monthNames = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+
   function loadMore() {
     visibleRecords += pageSize;
   }
@@ -82,6 +99,13 @@
       transactionToDelete = null;
     }
   }
+
+  // Reload data when period changes to ensure correct historical salary
+  $effect(() => {
+    dash.finance.selectedMonth;
+    dash.finance.selectedYear;
+    dash.loadData();
+  });
 
   // ─── Swipe to Delete Action State ──────────────────────────────
   let showRecurringDeleteModal = $state(false);
@@ -610,6 +634,7 @@
       <ThemeToggle />
     </div>
     <div class="actions">
+      <PeriodSelector />
       <CurrencyToggle
         currency={dash.finance.currency}
         currencies={dash.toggleOptions().map((code) => ({
@@ -626,6 +651,27 @@
   {#if dash.ui.activeTab === "home"}
     <!-- ─── VIEW: HOME ────────────────────────────────────────────────────── -->
     <div class="home-scroll-container">
+      {#if !dash.isCurrentPeriod()}
+        <div class="historical-indicator glass-card" transition:fade>
+          <div class="indicator-content">
+            <span class="indicator-icon">📅</span>
+            <div class="indicator-text">
+              <span class="label">Viendo Historial</span>
+              <span class="period">{dash.currentPeriodLabel()}</span>
+            </div>
+          </div>
+          <button
+            class="return-btn"
+            onclick={() => {
+              const now = new Date();
+              dash.finance.selectedMonth = now.getMonth();
+              dash.finance.selectedYear = now.getFullYear();
+            }}
+          >
+            Volver al Presente
+          </button>
+        </div>
+      {/if}
       <!-- ─── Liquidity Radar ──────────────────────────────────────────────────── -->
       <section class="main-radar">
         <div class="view-selector glass-card">
@@ -656,9 +702,13 @@
           </svg>
         </div>
         <div class="radar-info">
-          <span class="label"
-            >Disponible {dash.isMonthly() ? "del Mes" : "Quincenal"}</span
-          >
+          <span class="label">
+            {dash.isCurrentPeriod()
+              ? dash.isMonthly()
+                ? "Disponible del Mes"
+                : "Disponible Quincenal"
+              : "Balance de Cierre"}
+          </span>
           <span class="value" class:negative={dash.displayBudgetRemaining() < 0}
             >{dash.formatCurrency(dash.displayBudgetRemaining())}</span
           >
@@ -673,7 +723,8 @@
             {dash.formatCurrency(dash.displayNetIncome())}
           </span>
           <span class="card-hint">
-            Total {dash.isMonthly() ? "30 días" : "15 días"}
+            {dash.isCurrentPeriod() ? "Total" : "Cierre"}
+            {dash.isMonthly() ? "30 días" : "15 días"}
           </span>
         </div>
         <div class="card glass-card">
@@ -682,7 +733,8 @@
             {dash.formatCurrency(dash.displayExtraIncome())}
           </span>
           <span class="card-hint">
-            Total {dash.isMonthly() ? "Mes" : "Quincena"}
+            {dash.isCurrentPeriod() ? "Total" : "Cierre"}
+            {dash.isMonthly() ? "Mes" : "Quincena"}
           </span>
         </div>
         <div class="card glass-card">
@@ -691,7 +743,8 @@
             {dash.formatCurrency(dash.displayRecurring())}
           </span>
           <span class="card-hint">
-            {dash.isMonthly() ? "Total Mes" : "Total Quincena"}
+            {dash.isCurrentPeriod() ? "Proyección" : "Total"}
+            {dash.isMonthly() ? "Mes" : "Quincena"}
           </span>
         </div>
         <div class="card glass-card">
@@ -700,7 +753,8 @@
             {dash.formatCurrency(dash.displayVariableExpenses())}
           </span>
           <span class="card-hint">
-            Total {dash.isMonthly() ? "Mes" : "Quincena"}
+            {dash.isCurrentPeriod() ? "Total" : "Cierre"}
+            {dash.isMonthly() ? "Mes" : "Quincena"}
           </span>
         </div>
       </section>
@@ -785,7 +839,10 @@
             </div>
           {/each}
           {#if dash.currentPeriodTransactions().length === 0}
-            <p class="empty">No hay movimientos.</p>
+            <p class="empty">
+              No hay movimientos en {monthNames[dash.finance.selectedMonth]} de {dash
+                .finance.selectedYear}.
+            </p>
           {/if}
         </div>
       </section>
@@ -859,7 +916,10 @@
             </div>
           {/each}
           {#if dash.currentPeriodTransactions().length === 0}
-            <p class="empty">No se encontraron movimientos en este periodo.</p>
+            <p class="empty">
+              No hay movimientos en {monthNames[dash.finance.selectedMonth]} de {dash
+                .finance.selectedYear}.
+            </p>
           {/if}
         </div>
       </div>
@@ -1745,8 +1805,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 15px;
+    padding: 10px 15px;
     margin-bottom: 5px;
+  }
+  .view-header-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 15px 10px 15px;
   }
   .history-header h2 {
     margin: 0;
@@ -2140,6 +2205,76 @@
   }
   .home-scroll-container::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Historical Indicator */
+  .historical-indicator {
+    margin: 10px 0;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 243, 255, 0.05);
+    border: 1px solid rgba(0, 243, 255, 0.2);
+    border-radius: 14px;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .indicator-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .indicator-icon {
+    font-size: 1.4rem;
+  }
+
+  .indicator-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .indicator-text .label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .indicator-text .period {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--neon-blue);
+  }
+
+  .return-btn {
+    background: rgba(0, 243, 255, 0.1);
+    border: 1px solid var(--neon-blue);
+    color: var(--neon-blue);
+    padding: 6px 14px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .return-btn:hover {
+    background: var(--neon-blue);
+    color: var(--bg-color);
+    box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
   }
 
   .modal-input {

@@ -9,9 +9,11 @@
   onclick={state.toggleTheme}
   aria-label="Toggle Theme"
 >
-  {#if state.isDark}
+  {#if state.theme === "dark"}
+    <span class="icon">🌙</span>
+  {:else if state.theme === "light"}
     <span class="icon">☀️</span>
   {:else}
-    <span class="icon">🌙</span>
+    <span class="icon">🌸</span>
   {/if}
 </button>

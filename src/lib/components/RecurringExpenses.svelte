@@ -42,6 +42,11 @@
       type="number"
       bind:value={recurringState.newAmount}
       placeholder="Monto"
+      onkeydown={(e) => {
+        if (["e", "E", "+", "-"].includes(e.key)) {
+          e.preventDefault();
+        }
+      }}
     />
 
     <div class="selector-group">

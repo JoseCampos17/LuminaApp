@@ -36,6 +36,11 @@
         bind:value={state.amount}
         placeholder="0"
         onfocus={(e) => e.currentTarget.select()}
+        onkeydown={(e) => {
+          if (["e", "E", "+", "-"].includes(e.key)) {
+            e.preventDefault();
+          }
+        }}
       />
     </div>
 

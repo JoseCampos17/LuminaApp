@@ -1,6 +1,7 @@
 import { invoke } from "$lib/tauri";
 import { onMount } from "svelte";
 import { toUSD, fromUSD, loadCurrencies } from "$lib/currencies";
+import { financeState } from "$lib/stores/finance.svelte";
 import type { CurrencyDef } from "$lib/currencies";
 
 const LS_FREQ_KEY = "lumina_salary_frequency";
@@ -73,7 +74,10 @@ export class SalaryConfigState {
 
   loadSalary = async () => {
     try {
-      const data = await invoke("get_salary") as any;
+      const data = await invoke("get_salary", {
+        month: financeState.selectedMonth,
+        year: financeState.selectedYear
+      }) as any;
       const rawAmount = data.amount;
       const rawCurrency = data.currency || "USD";
 
@@ -97,6 +101,8 @@ export class SalaryConfigState {
         amount: biweeklyLocal,
         currency: this.props.currency,
         frequency: "quincena", // always quincena since we normalize before saving
+        month: financeState.selectedMonth,
+        year: financeState.selectedYear
       });
 
       // Persist the frequency preference in localStorage

@@ -99,7 +99,87 @@ pub fn init(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error::Er
         [],
     )?;
 
+    // Create salary history table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS salary_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            currency TEXT NOT NULL,
+            frequency TEXT NOT NULL,
+            effective_date TEXT NOT NULL -- YYYY-MM-DD
+        )",
+        [],
+    )?;
+
+    // Migrate existing salary if salary_history is empty
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM salary_history", [], |r| r.get(0))?;
+    if count == 0 {
+        if let (Ok(amt), Ok(curr), Ok(freq)) = (
+            get_setting(&conn, "biweekly_salary"),
+            get_setting(&conn, "biweekly_salary_currency"),
+            get_setting(&conn, "salary_frequency"),
+        ) {
+            if let Ok(amount) = amt.parse::<f64>() {
+                if amount > 0.0 {
+                    let now = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs();
+                    let today = format_date_from_secs(now);
+                    conn.execute(
+                        "INSERT INTO salary_history (amount, currency, frequency, effective_date) VALUES (?1, ?2, ?3, ?4)",
+                        params![amount, curr, freq, today],
+                    )?;
+                }
+            }
+        }
+    }
+
+    // CLEANUP: If there's a record with exactly '2026-01-01', it was likely from the first (bad) migration.
+    // Move it to today to avoid showing salary in the past improperly.
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let today = format_date_from_secs(now);
+    
+    conn.execute(
+        "UPDATE salary_history SET effective_date = ?1 WHERE effective_date = '2026-01-01'",
+        params![today],
+    )?;
+
     Ok(conn)
+}
+
+pub fn format_date_from_secs(secs: u64) -> String {
+    // Simple YYYY-MM-DD generator (approximation for native rust without chrono)
+    let days = secs / 86400;
+    let mut year = 1970;
+    let mut days_left = days;
+    
+    loop {
+        let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        let year_days = if leap { 366 } else { 365 };
+        if days_left < year_days { break; }
+        days_left -= year_days;
+        year += 1;
+    }
+    
+    let leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    let month_days = if leap {
+        [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    } else {
+        [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    };
+    
+    let mut month = 1;
+    for &m_days in month_days.iter() {
+        if days_left < m_days { break; }
+        days_left -= m_days;
+        month += 1;
+    }
+    
+    format!("{:04}-{:02}-{:02}", year, month, days_left + 1)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -267,5 +347,6 @@ pub fn clear_all_data(conn: &Connection) -> rusqlite::Result<()> {
     conn.execute("DELETE FROM recurring_expenses", [])?;
     conn.execute("UPDATE settings SET value = '0' WHERE key = 'biweekly_salary'", [])?;
     conn.execute("UPDATE settings SET value = 'COP' WHERE key = 'biweekly_salary_currency'", [])?;
+    conn.execute("DELETE FROM salary_history", [])?;
     Ok(())
 }

@@ -18,6 +18,8 @@ import {
   toggleOptions,
   clearAllData,
   getFilteredRecurring,
+  isCurrentPeriod,
+  currentPeriodLabel,
 } from "$lib/stores/finance.svelte";
 
 import {
@@ -64,6 +66,8 @@ export class DashboardState {
   toggleOptions = toggleOptions;
   clearAllData = clearAllData;
   getFilteredRecurring = getFilteredRecurring;
+  isCurrentPeriod = isCurrentPeriod;
+  currentPeriodLabel = currentPeriodLabel;
 
   startEdit = startEdit;
   clearEdit = clearEdit;
