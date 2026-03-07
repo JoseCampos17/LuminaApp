@@ -78,7 +78,7 @@ export class RecurringExpensesState {
     }
   };
 
-  save = async () => {
+  save = async (selectedCategory: string = "Otros") => {
     if (!this.newDesc || this.newAmount <= 0) return;
 
     try {
@@ -105,7 +105,7 @@ export class RecurringExpensesState {
             this.newFrequency === "monthly" ? this.newDayOfMonth : null,
           day_of_week:
             this.newFrequency === "weekly" ? this.newDayOfWeek : null,
-          category: "Recurrente",
+          category: selectedCategory,
         },
       });
 

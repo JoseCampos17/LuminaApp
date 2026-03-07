@@ -100,16 +100,3 @@
     </div>
   {/if}
 </div>
-
-<style>
-  .insight-card.clickable {
-    cursor: pointer;
-    transition:
-      transform 0.2s ease,
-      background 0.2s ease;
-  }
-  .insight-card.clickable:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.1);
-  }
-</style>

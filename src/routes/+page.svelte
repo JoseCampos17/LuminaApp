@@ -178,6 +178,15 @@
   let txSwipingId = $state<string | null>(null);
   let txSwipeOffset = $state<number>(0);
   let txDisappearingId = $state<string | null>(null);
+  let showActionMenuModal = $state(false);
+  let activeActionItem = $state<any>(null);
+  let activeActionType = $state<"transaction" | "recurring">("transaction");
+
+  function openActionMenu(item: any, type: "transaction" | "recurring") {
+    activeActionItem = item;
+    activeActionType = type;
+    showActionMenuModal = true;
+  }
 
   function handleTxTouchStart(e: TouchEvent | MouseEvent, id: string) {
     if (dash.ui.activeTab !== "history" && dash.ui.activeTab !== "home") return;
@@ -257,6 +266,19 @@
       txActionTarget = null;
     }
   }
+
+  const categories = [
+    { name: "Todos", icon: "📋" },
+    { name: "Vivienda", icon: "🏠" },
+    { name: "Comida", icon: "🥗" },
+    { name: "Transporte", icon: "🚌" },
+    { name: "Entretenimiento", icon: "🎮" },
+    { name: "Salud", icon: "🏥" },
+    { name: "Educación", icon: "🎓" },
+    { name: "Servicios", icon: "💸" },
+    { name: "Seguros", icon: "🛡" },
+    { name: "Otros", icon: "🧩" },
+  ];
 </script>
 
 <main class="dashboard {dash.ui.activeTab}">
@@ -282,130 +304,177 @@
 
   {#if dash.ui.activeTab === "home"}
     <!-- ─── VIEW: HOME ────────────────────────────────────────────────────── -->
-    <!-- ─── Liquidity Radar ──────────────────────────────────────────────────── -->
-    <section class="main-radar">
-      <div class="view-selector glass-card">
-        <button
-          class:active={dash.finance.viewMode === "quincena"}
-          onclick={() => (dash.finance.viewMode = "quincena")}>Quincena</button
-        >
-        <button
-          class:active={dash.finance.viewMode === "mes"}
-          onclick={() => (dash.finance.viewMode = "mes")}>Mes</button
-        >
-      </div>
-      <div class="radar-visual">
-        <svg viewBox="0 0 100 100">
-          <circle class="bg-circle" cx="50" cy="50" r="45" />
-          <circle
-            class="fg-circle"
-            cx="50"
-            cy="50"
-            r="45"
-            style="stroke-dasharray: {dash.displayRadarValue() * 2.82} 282"
-          />
-          <text class="radar-text" x="50" y="52"
-            >{dash.displayRadarValue()}%</text
-          >
-          <text class="radar-label-small" x="50" y="62">LIQUIDEZ</text>
-        </svg>
-      </div>
-      <div class="radar-info">
-        <span class="label"
-          >Disponible {dash.isMonthly() ? "del Mes" : "Quincenal"}</span
-        >
-        <span class="value"
-          >{dash.formatCurrency(dash.displayBudgetRemaining())}</span
-        >
-      </div>
-    </section>
-
-    <!-- ─── Summary Cards ──────────────────────────────────────────────────── -->
-    <section class="summary-cards">
-      <div class="card glass-card">
-        <span class="card-label">Ingreso Neto</span>
-        <span class="card-value"
-          >{dash.formatCurrency(dash.displayNetIncome())}</span
-        >
-        <span class="card-hint"
-          >Base {dash.isMonthly() ? "30 días" : "15 días"}</span
-        >
-      </div>
-      <div class="card glass-card">
-        <span class="card-label">Gastos Variables</span>
-        <span class="card-value negative"
-          >{dash.formatCurrency(dash.displayVariableExpenses())}</span
-        >
-        <span class="card-hint"
-          >Total {dash.isMonthly() ? "Mes" : "Quincena"}</span
-        >
-      </div>
-    </section>
-
-    <!-- ─── Financial Insights ─────────────────────────────────────────────── -->
-    <section class="insights-section">
-      <FinancialInsights
-        netIncome={dash.displayNetIncome()}
-        variableExpenses={dash.displayVariableExpenses()}
-        recurringExpenses={dash.finance.recurringExpenses}
-        viewMode={dash.finance.viewMode}
-      />
-    </section>
-
-    <!-- ─── Transaction Timeline (Preview) ─────────────────────────────────── -->
-    <section class="timeline">
-      <div class="timeline-header">
-        <div class="spacer"></div>
-        <h2>Últimos Movimientos</h2>
-        <div class="header-actions">
+    <div class="home-scroll-container">
+      <!-- ─── Liquidity Radar ──────────────────────────────────────────────────── -->
+      <section class="main-radar">
+        <div class="view-selector glass-card">
           <button
-            class="link-btn"
-            onclick={() => (dash.ui.activeTab = "history")}>Ver todo</button
+            class:active={dash.finance.viewMode === "quincena"}
+            onclick={() => (dash.finance.viewMode = "quincena")}
+            >Quincena</button
+          >
+          <button
+            class:active={dash.finance.viewMode === "mes"}
+            onclick={() => (dash.finance.viewMode = "mes")}>Mes</button
           >
         </div>
-      </div>
-      <div class="tx-scroll">
-        {#each dash.currentPeriodTransactions().slice(0, 2) as tx, i}
-          <div
-            class="tx-item glass-card swipeable"
-            class:disappearing={txDisappearingId === tx.id}
-            style={txSwipingId === tx.id
-              ? `transform: translateX(${txSwipeOffset}px)`
-              : ""}
-            ontouchstart={(e) => handleTxTouchStart(e, tx.id)}
-            ontouchmove={handleTxTouchMove}
-            ontouchend={(e) => handleTxTouchEnd(e, tx)}
-            onmousedown={(e) => handleTxTouchStart(e, tx.id)}
-            onmousemove={handleTxTouchMove}
-            onmouseup={(e) => handleTxTouchEnd(e, tx)}
-            onmouseleave={(e) => handleTxTouchEnd(e, tx)}
-            onclick={() => handleClickTxEdit(tx)}
-            role="button"
-            tabindex="0"
-            onkeypress={(e) => e.key === "Enter" && handleClickTxEdit(tx)}
+        <div class="radar-visual">
+          <svg viewBox="0 0 100 100">
+            <circle class="bg-circle" cx="50" cy="50" r="45" />
+            <circle
+              class="fg-circle"
+              cx="50"
+              cy="50"
+              r="45"
+              style="stroke-dasharray: {dash.displayRadarValue() * 2.82} 282"
+            />
+            <text class="radar-text" x="50" y="52"
+              >{dash.displayRadarValue()}%</text
+            >
+            <text class="radar-label-small" x="50" y="62">LIQUIDEZ</text>
+          </svg>
+        </div>
+        <div class="radar-info">
+          <span class="label"
+            >Disponible {dash.isMonthly() ? "del Mes" : "Quincenal"}</span
           >
-            <div class="tx-left">
-              <span class="tx-desc">{tx.description}</span>
-              <span class="tx-meta">{tx.category} • {tx.date}</span>
-            </div>
-            <div class="tx-right-actions">
-              <span class="tx-amount {tx.amount > 0 ? 'positive' : 'negative'}">
-                {tx.amount > 0 ? "+" : ""}{dash.formatCurrency(
-                  Math.abs(tx.amount),
-                )}
-              </span>
+          <span class="value" class:negative={dash.displayBudgetRemaining() < 0}
+            >{dash.formatCurrency(dash.displayBudgetRemaining())}</span
+          >
+        </div>
+      </section>
+
+      <!-- ─── Summary Cards ──────────────────────────────────────────────────── -->
+      <section class="summary-cards">
+        <div class="card glass-card">
+          <span class="card-label">Ingreso Neto</span>
+          <span class="card-value">
+            {dash.formatCurrency(dash.displayNetIncome())}
+          </span>
+          <span class="card-hint">
+            Total {dash.isMonthly() ? "30 días" : "15 días"}
+          </span>
+        </div>
+        <div class="card glass-card">
+          <span class="card-label">Ingresos Extra</span>
+          <span class="card-value positive">
+            {dash.formatCurrency(dash.displayExtraIncome())}
+          </span>
+          <span class="card-hint">
+            Total {dash.isMonthly() ? "Mes" : "Quincena"}
+          </span>
+        </div>
+        <div class="card glass-card">
+          <span class="card-label">Gastos Fijos</span>
+          <span class="card-value negative">
+            {dash.formatCurrency(dash.displayRecurring())}
+          </span>
+          <span class="card-hint">
+            {dash.isMonthly() ? "Total Mes" : "Total Quincena"}
+          </span>
+        </div>
+        <div class="card glass-card">
+          <span class="card-label">Gastos Variables</span>
+          <span class="card-value negative">
+            {dash.formatCurrency(dash.displayVariableExpenses())}
+          </span>
+          <span class="card-hint">
+            Total {dash.isMonthly() ? "Mes" : "Quincena"}
+          </span>
+        </div>
+      </section>
+
+      <!-- ─── Financial Insights ─────────────────────────────────────────────── -->
+      <section class="insights-section">
+        <FinancialInsights
+          netIncome={dash.displayNetIncome()}
+          variableExpenses={dash.displayVariableExpenses()}
+          recurringExpenses={dash.finance.recurringExpenses}
+          viewMode={dash.finance.viewMode}
+        />
+      </section>
+
+      <!-- ─── Transaction Timeline (Preview) ─────────────────────────────────── -->
+      <section class="timeline">
+        <div class="timeline-header">
+          <div class="spacer"></div>
+          <h2>Últimos Movimientos</h2>
+          <div class="header-actions">
+            <button
+              class="link-btn"
+              onclick={() => (dash.ui.activeTab = "history")}>Ver todo</button
+            >
+          </div>
+        </div>
+        <div class="tx-scroll">
+          {#each dash.currentPeriodTransactions().slice(0, 2) as tx, i}
+            <div
+              class="tx-item glass-card swipeable"
+              class:disappearing={txDisappearingId === tx.id}
+              style={txSwipingId === tx.id
+                ? `transform: translateX(${txSwipeOffset}px)`
+                : ""}
+              ontouchstart={(e) => handleTxTouchStart(e, tx.id)}
+              ontouchmove={handleTxTouchMove}
+              ontouchend={(e) => handleTxTouchEnd(e, tx)}
+              onmousedown={(e) => handleTxTouchStart(e, tx.id)}
+              onmousemove={handleTxTouchMove}
+              onmouseup={(e) => handleTxTouchEnd(e, tx)}
+              onmouseleave={(e) => handleTxTouchEnd(e, tx)}
+              onclick={() => handleClickTxEdit(tx)}
+              role="button"
+              tabindex="0"
+              onkeypress={(e) => e.key === "Enter" && handleClickTxEdit(tx)}
+            >
+              <div class="tx-left">
+                <span class="tx-desc">{tx.description}</span>
+                <span class="tx-meta">{tx.category} • {tx.date}</span>
+              </div>
+              <div class="tx-right-actions">
+                <span
+                  class="tx-amount {tx.amount > 0 ? 'positive' : 'negative'}"
+                >
+                  {tx.amount > 0 ? "+" : ""}{dash.formatLocalAmount(tx.amount)}
+                </span>
+                <button
+                  class="more-btn"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    openActionMenu(tx, "transaction");
+                  }}
+                  aria-label="Más acciones"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="18"
+                    height="18"
+                  >
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="12" cy="5" r="1"></circle>
+                    <circle cx="12" cy="19" r="1"></circle>
+                  </svg>
+                </button>
+              </div>
               <div class="delete-backdrop"></div>
             </div>
-          </div>
-        {/each}
-        {#if dash.currentPeriodTransactions().length === 0}
-          <p class="empty">No hay movimientos.</p>
-        {/if}
-      </div>
-    </section>
+          {/each}
+          {#if dash.currentPeriodTransactions().length === 0}
+            <p class="empty">No hay movimientos.</p>
+          {/if}
+        </div>
+      </section>
+    </div>
   {:else if dash.ui.activeTab === "history"}
     <!-- ─── VIEW: HISTORY ────────────────────────────────────────────────── -->
     <section class="full-history">
+      <div class="history-header">
+        <h2>Historial de Movimientos</h2>
+      </div>
       <div class="history-container glass-card">
         <div class="history-list" onscroll={handleScroll}>
           {#each dash
@@ -439,12 +508,33 @@
                 <span
                   class="tx-amount {tx.amount > 0 ? 'positive' : 'negative'}"
                 >
-                  {tx.amount > 0 ? "+" : ""}{dash.formatCurrency(
-                    Math.abs(tx.amount),
-                  )}
+                  {tx.amount > 0 ? "+" : ""}{dash.formatLocalAmount(tx.amount)}
                 </span>
-                <div class="delete-backdrop"></div>
+                <button
+                  class="more-btn"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    openActionMenu(tx, "transaction");
+                  }}
+                  aria-label="Más acciones"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="18"
+                    height="18"
+                  >
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="12" cy="5" r="1"></circle>
+                    <circle cx="12" cy="19" r="1"></circle>
+                  </svg>
+                </button>
               </div>
+              <div class="delete-backdrop"></div>
             </div>
           {/each}
           {#if dash.currentPeriodTransactions().length === 0}
@@ -456,7 +546,8 @@
   {:else if dash.ui.activeTab === "recurring"}
     <!-- ─── VIEW: RECURRING FIXED EXPENSES ─────────────────────────────── -->
     <section class="full-history">
-      <div class="history-header" style="justify-content: flex-end;">
+      <div class="history-header">
+        <h2>Gastos Fijos</h2>
         <button
           class="add-btn-small"
           onclick={() => (dash.ui.showRecurringModal = true)}
@@ -465,12 +556,43 @@
         </button>
       </div>
 
-      <div
-        class="history-container glass-card"
-        style="margin-bottom: 80px; overflow: hidden;"
-      >
+      <div class="category-filters">
+        <div class="filters-scroll">
+          {#each categories as cat}
+            <button
+              type="button"
+              class="filter-chip"
+              class:active={cat.name === "Todos"
+                ? dash.finance.filterCategories.length === 0
+                : dash.finance.filterCategories.includes(cat.name)}
+              onclick={() => {
+                if (cat.name === "Todos") {
+                  dash.finance.filterCategories = [];
+                } else {
+                  if (dash.finance.filterCategories.includes(cat.name)) {
+                    dash.finance.filterCategories =
+                      dash.finance.filterCategories.filter(
+                        (c: string) => c !== cat.name,
+                      );
+                  } else {
+                    dash.finance.filterCategories = [
+                      ...dash.finance.filterCategories,
+                      cat.name,
+                    ];
+                  }
+                }
+              }}
+            >
+              <span class="chip-icon">{cat.icon}</span>
+              <span class="chip-label">{cat.name}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <div class="history-container glass-card" style="overflow: hidden;">
         <div class="history-list">
-          {#each dash.finance.recurringExpenses as exp}
+          {#each dash.getFilteredRecurring() as exp}
             <div
               class="tx-item swipeable"
               class:disappearing={disappearingId === exp.id}
@@ -492,6 +614,7 @@
               <div class="tx-left">
                 <span class="tx-desc">{exp.description}</span>
                 <span class="tx-meta">
+                  <span class="tx-cat-badge">{exp.category || "Otros"}</span> •
                   {#if exp.frequency === "weekly"}
                     Cada {[
                       "Domingo",
@@ -509,10 +632,33 @@
               </div>
               <div class="tx-right-actions">
                 <span class="tx-amount negative">
-                  {dash.formatCurrency(exp.amount)}
+                  {dash.formatLocalAmount(exp.amount)}
                 </span>
-                <div class="delete-backdrop"></div>
+                <button
+                  class="more-btn"
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    openActionMenu(exp, "recurring");
+                  }}
+                  aria-label="Más acciones"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="18"
+                    height="18"
+                  >
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="12" cy="5" r="1"></circle>
+                    <circle cx="12" cy="19" r="1"></circle>
+                  </svg>
+                </button>
               </div>
+              <div class="delete-backdrop"></div>
             </div>
           {/each}
           {#if dash.finance.recurringExpenses.length === 0}
@@ -530,7 +676,36 @@
         <CurrencyRates currencies={dash.finance.currencies} />
 
         <div class="local-currency-box glass-card">
-          <span class="label">Divisa Local 🌍</span>
+          <span class="label">
+            Divisa Local 🌍
+            <button
+              type="button"
+              class="info-icon"
+              onclick={() => {
+                dash.ui.infoModalTitle = "Divisa Local";
+                dash.ui.infoModalText =
+                  "La divisa local es la moneda principal que usa Lumina para tus cálculos. ⚠️ Si la cambias, todos tus movimientos, gastos fijos y configuración de salario serán eliminados permanentemente.";
+                dash.ui.showInfoModal = true;
+              }}
+              aria-label="Más información sobre Divisa Local"
+              ><svg
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                ><circle cx="12" cy="12" r="10" stroke-width="1.5" /><path
+                  d="M12 17v-5"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                /><circle
+                  cx="12"
+                  cy="7.5"
+                  r="1"
+                  fill="currentColor"
+                  stroke="none"
+                /></svg
+              ></button
+            >
+          </span>
           <div class="currency-options">
             {#each ["COP", "CLP", "USD"] as opt}
               <button
@@ -867,6 +1042,98 @@
       </div>
     </div>
   </Modal>
+  <!-- Action Menu Modal -->
+  <Modal
+    isOpen={showActionMenuModal}
+    close={() => (showActionMenuModal = false)}
+    title="Opciones"
+    minimal={true}
+  >
+    <div class="action-menu">
+      <div class="action-menu-header">
+        <div class="item-info">
+          <span class="item-desc"
+            >{activeActionItem?.description || "Sin descripción"}</span
+          >
+          <span class="item-meta"
+            >{activeActionItem?.category || activeActionItem?.frequency || ""} •
+            {activeActionItem?.date ||
+              (activeActionItem?.day_of_month
+                ? "Día " + activeActionItem.day_of_month
+                : "")}</span
+          >
+        </div>
+      </div>
+      <button
+        class="action-item"
+        onclick={() => {
+          showActionMenuModal = false;
+          if (activeActionType === "transaction") {
+            dash.startEdit(activeActionItem);
+          } else {
+            dash.ui.editingRecurring = activeActionItem;
+            dash.ui.showRecurringModal = true;
+          }
+        }}
+      >
+        <span class="icon">✏️</span>
+        <span class="label">Editar</span>
+      </button>
+      <button
+        class="action-item danger"
+        onclick={() => {
+          showActionMenuModal = false;
+          if (activeActionType === "transaction") {
+            txActionTarget = activeActionItem;
+            showTxDeleteModal = true;
+          } else {
+            recurringActionTarget = activeActionItem;
+            showRecurringDeleteModal = true;
+          }
+        }}
+      >
+        <span class="icon">🗑️</span>
+        <span class="label">Eliminar</span>
+      </button>
+      <button
+        class="action-item cancel"
+        onclick={() => (showActionMenuModal = false)}
+      >
+        Cancelar
+      </button>
+    </div>
+  </Modal>
+
+  <!-- Generic Info Modal (same style as Proyección) -->
+  <Modal
+    isOpen={dash.ui.showInfoModal}
+    close={() => (dash.ui.showInfoModal = false)}
+    title=""
+    minimal={true}
+  >
+    <div style="padding-bottom: 0.5rem;">
+      <div style="text-align:center; margin-bottom: 1rem;">
+        <div style="font-size: 2rem;">ℹ️</div>
+        <h3 style="margin: 6px 0 0; color: var(--text-color);">
+          {dash.ui.infoModalTitle}
+        </h3>
+      </div>
+      <p
+        style="color: var(--text-dim); line-height: 1.6; text-align: center; margin: 0 0 1.2rem;"
+      >
+        {dash.ui.infoModalText}
+      </p>
+      <div style="display: flex; justify-content: center;">
+        <button
+          class="add-btn"
+          style="max-width: 180px;"
+          onclick={() => (dash.ui.showInfoModal = false)}
+        >
+          Entendido
+        </button>
+      </div>
+    </div>
+  </Modal>
 </main>
 
 <style>
@@ -910,17 +1177,39 @@
   .history-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 210px); /* Slightly smaller for better fit */
+    height: calc(
+      100vh - 330px
+    ); /* Significantly reduced height to clear BottomNav */
     padding: 0;
     overflow: hidden;
-    margin-top: 10px;
-    margin-bottom: 20px; /* Added spacing from the bottom menu */
+    margin-top: 5px; /* Slight bump down from filters */
+    margin-bottom: 20px;
+  }
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 15px;
+    margin-bottom: 5px;
+  }
+  .history-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-color);
   }
 
   .history-list {
     flex: 1;
     overflow-y: auto;
     padding: 15px;
+  }
+
+  /* Safe spacer to prevent occlusion by BottomNav */
+  .history-list::after {
+    content: "";
+    display: block;
+    height: 90px;
   }
 
   /* Custom scrollbar for better aesthetics */
@@ -930,6 +1219,7 @@
   .history-list::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .history-list::-webkit-scrollbar-thumb {
     background: var(--glass-border);
     border-radius: 10px;
@@ -957,6 +1247,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    flex: 1; /* This will push the right actions to the end */
   }
 
   .tx-desc {
@@ -971,9 +1262,105 @@
 
   .tx-right-actions {
     display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px; /* Reduced gap for tighter layout */
+  }
+
+  .tx-amount {
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+
+  .more-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 8px 4px; /* Narrower padding horizontally */
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    opacity: 0.6;
+  }
+
+  .more-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-color);
+  }
+
+  .action-menu {
+    display: flex;
     flex-direction: column;
-    align-items: flex-end;
     gap: 8px;
+    padding: 10px 5px;
+  }
+
+  .action-menu-header {
+    padding: 5px 10px 15px;
+    border-bottom: 1px solid var(--glass-border);
+    margin-bottom: 10px;
+  }
+
+  .item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .item-desc {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-color);
+  }
+
+  .item-meta {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 14px 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+  }
+
+  .action-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-1px);
+  }
+
+  .action-item.danger {
+    color: #ff4d4d;
+    border-color: rgba(255, 77, 77, 0.2);
+    background: rgba(255, 77, 77, 0.05);
+  }
+
+  .action-item.danger:hover {
+    background: rgba(255, 77, 77, 0.1);
+  }
+
+  .action-item.cancel {
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    margin-top: 5px;
   }
 
   .pagination-footer {
@@ -1006,6 +1393,33 @@
     opacity: 0.9;
   }
 
+  .add-btn-small {
+    background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .add-btn-small:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+    filter: brightness(1.1);
+  }
+
+  .add-btn-small:active {
+    transform: translateY(0);
+    filter: brightness(0.9);
+  }
+
   .brand {
     display: flex;
     align-items: center;
@@ -1033,5 +1447,80 @@
 
   .brand :global(.theme-toggle .icon) {
     font-size: 1rem;
+  }
+
+  /* Category Filters Styles (Final Polish) */
+  .category-filters {
+    padding: 0; /* Reduced padding to lower gap */
+    margin-bottom: -5px; /* Negative margin to suck the list up tighter */
+  }
+
+  .filters-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 6px; /* Very tight gap */
+    padding: 5px 15px 15px 15px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  .filters-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Very tight internal gap */
+    padding: 6px 12px; /* Tighter padding */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .filter-chip.active {
+    background: linear-gradient(135deg, var(--accent-color), #8b5cf6);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+    transform: translateY(-2px);
+  }
+
+  .tx-cat-badge {
+    color: var(--accent-color);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+  }
+
+  .chip-icon {
+    font-size: 1.1rem;
+  }
+
+  .chip-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* Home scroll container for mobile safe layout */
+  .home-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 20px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .home-scroll-container::-webkit-scrollbar {
+    display: none;
   }
 </style>

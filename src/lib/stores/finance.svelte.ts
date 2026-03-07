@@ -34,7 +34,15 @@ export const financeState = $state({
 
   /** Available currencies with user-saved rates. */
   currencies: loadCurrencies() as CurrencyDef[],
+
+  /** Category filters for recurring expenses (empty means "Todos") */
+  filterCategories: [] as string[],
 });
+
+export function getFilteredRecurring() {
+  if (financeState.filterCategories.length === 0) return financeState.recurringExpenses;
+  return financeState.recurringExpenses.filter(e => financeState.filterCategories.includes((e as any).category || "Otros"));
+}
 
 // ─── Setters ─────────────────────────────────────────────────────────────────
 
@@ -111,20 +119,34 @@ export function displayRecurring() {
 }
 
 export function displayNetIncome() {
-  return salaryValue() - displayRecurring();
+  return salaryValue() + displayExtraIncome() - displayRecurring();
 }
 
 export function displayBudgetRemaining() {
-  return Math.max(0, displayNetIncome() - displayVariableExpenses());
+  return displayNetIncome() - displayVariableExpenses();
 }
 
 export function displayRadarValue() {
   const net = displayNetIncome();
-  return net > 0 ? Math.round((displayBudgetRemaining() / net) * 100) : 0;
+  return net > 0 ? Math.max(0, Math.round((displayBudgetRemaining() / net) * 100)) : 0;
 }
 
 export function formatCurrency(usdAmount: number): string {
   return formatAmount(usdAmount, financeState.currency, financeState.currencies);
+}
+
+/**
+ * Formats an amount that is already stored in localCurrency (e.g. transactions, recurring).
+ * Converts local → USD → display currency.
+ */
+export function formatLocalAmount(localAmount: number): string {
+  const usd = toUSD(Math.abs(localAmount), financeState.localCurrency, financeState.currencies);
+  return formatAmount(usd, financeState.currency, financeState.currencies);
+}
+
+/** Returns the active display currency code (e.g. "COP", "CLP", "USD"). */
+export function currencyLabel(): string {
+  return financeState.currency;
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────────

@@ -16,11 +16,15 @@ export const uiState = $state({
 
   editingTransaction: null as Transaction | null,
   editingRecurring: null as any | null,
-
   showTutorial: false,
   tutorialStep: 0,
 
   activeTab: 'home' as 'home' | 'history' | 'recurring' | 'settings',
+
+  // Generic info modal
+  showInfoModal: false,
+  infoModalTitle: "",
+  infoModalText: "",
 });
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
@@ -44,4 +48,10 @@ export function initTutorial() {
   if (!localStorage.getItem("lumina_onboarded")) {
     uiState.showTutorial = true;
   }
+}
+
+export function openInfoModal(title: string, text: string) {
+  uiState.infoModalTitle = title;
+  uiState.infoModalText = text;
+  uiState.showInfoModal = true;
 }

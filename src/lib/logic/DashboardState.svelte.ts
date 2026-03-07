@@ -4,6 +4,7 @@ import {
   loadData,
   deleteTransaction,
   formatCurrency,
+  formatLocalAmount,
   setLocalCurrency,
   handleRatesUpdated,
   isMonthly,
@@ -12,8 +13,11 @@ import {
   displayBudgetRemaining,
   displayRadarValue,
   displayVariableExpenses,
+  displayRecurring,
+  displayExtraIncome,
   toggleOptions,
   clearAllData,
+  getFilteredRecurring,
 } from "$lib/stores/finance.svelte";
 
 import {
@@ -46,6 +50,7 @@ export class DashboardState {
   loadData = loadData;
   deleteTransaction = deleteTransaction;
   formatCurrency = formatCurrency;
+  formatLocalAmount = formatLocalAmount;
   setLocalCurrency = setLocalCurrency;
   handleRatesUpdated = handleRatesUpdated;
   isMonthly = isMonthly;
@@ -54,8 +59,11 @@ export class DashboardState {
   displayBudgetRemaining = displayBudgetRemaining;
   displayRadarValue = displayRadarValue;
   displayVariableExpenses = displayVariableExpenses;
+  displayRecurring = displayRecurring;
+  displayExtraIncome = displayExtraIncome;
   toggleOptions = toggleOptions;
   clearAllData = clearAllData;
+  getFilteredRecurring = getFilteredRecurring;
 
   startEdit = startEdit;
   clearEdit = clearEdit;

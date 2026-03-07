@@ -102,3 +102,113 @@ option {
   margin: 15px 0;
   width: 100%;
 }
+
+/* Tooltip Icon & Popover */
+.tooltip-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.info-icon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid rgba(0, 212, 255, 0.35);
+  color: rgba(0, 212, 255, 0.7);
+  font-size: 0;                /* Hide any text */
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  padding: 0;
+  position: relative;
+}
+
+/* SVG icon inside the button */
+.info-icon svg {
+  width: 10px;
+  height: 10px;
+  stroke: rgba(0, 212, 255, 0.7);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke 0.2s;
+  flex-shrink: 0;
+}
+
+.info-icon:hover,
+.info-icon:active {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
+.info-icon:hover svg,
+.info-icon:active svg {
+  stroke: var(--neon-blue);
+}
+
+.info-icon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 10px); /* Appear above the icon */
+  right: 50%;
+  transform: translateX(50%); /* Centered exactly above the icon */
+  width: max-content;
+  max-width: 200px;
+  background: rgba(15, 23, 42, 0.98);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: normal;
+  white-space: normal;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transform-origin: bottom center;
+  z-index: 10000;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.info-icon::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 4px); /* Arrow pointing down from above */
+  right: 50%;
+  transform: translateX(50%); /* Centered arrow */
+  border-width: 6px;
+  border-style: solid;
+  border-color: rgba(15, 23, 42, 0.98) transparent transparent transparent; /* Downward arrow */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+.info-icon:hover::after,
+.info-icon:active::after,
+.info-icon:hover::before,
+.info-icon:active::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.info-icon:hover::after,
+.info-icon:active::after,
+.info-icon:hover::before,
+.info-icon:active::before {
+  opacity: 1;
+  visibility: visible;
+}

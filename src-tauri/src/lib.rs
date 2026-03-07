@@ -1,5 +1,4 @@
 mod db;
-mod sync;
 
 use db::{DbState, Event};
 use tauri::Manager;
@@ -147,14 +146,6 @@ pub fn run() {
         .setup(|app| {
             let conn = db::init(app.handle())?;
             app.manage(DbState(Mutex::new(conn)));
-            
-            /* 
-            // Start sync engine in background
-            let app_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                sync::start_sync_engine(app_handle).await;
-            });
-            */
 
             Ok(())
         })

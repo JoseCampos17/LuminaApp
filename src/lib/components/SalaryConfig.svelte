@@ -1,5 +1,6 @@
 <script lang="ts">
   import { SalaryConfigState } from "$lib/logic/SalaryConfigState.svelte";
+  import { openInfoModal } from "$lib/stores/ui.svelte";
   import type { CurrencyDef } from "$lib/currencies";
 
   let props = $props<{
@@ -24,7 +25,35 @@
 <div class="salary-box glass-card" data-editing={state.isEditing}>
   <div class="info">
     <div class="header-row">
-      <span class="label">Tu Salario en {props.currency} 💰</span>
+      <span class="label">
+        Tu Salario en {props.currency} 💰
+        <button
+          type="button"
+          class="info-icon"
+          onclick={() =>
+            openInfoModal(
+              "Tu Salario",
+              "Tu ingreso recurrente principal. Se usa para calcular tu Liquidez en el radar y tu Presupuesto Disponible en la quincena o mes.",
+            )}
+          aria-label="Más información sobre el salario"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            ><circle cx="12" cy="12" r="10" stroke-width="1.5" /><path
+              d="M12 17v-5"
+              stroke-width="1.8"
+              stroke-linecap="round"
+            /><circle
+              cx="12"
+              cy="7.5"
+              r="1"
+              fill="currentColor"
+              stroke="none"
+            /></svg
+          ></button
+        >
+      </span>
       <div class="frequency-pill">
         <button
           class="pill-opt {(state.isEditing
@@ -67,11 +96,16 @@
     {:else}
       <div class="view-mode">
         <span class="amount">
-          {new Intl.NumberFormat(props.currency === "USD" ? "en-US" : "es-CO", {
-            style: "currency",
-            currency: props.currency,
-            maximumFractionDigits: props.currency === "USD" ? 2 : 0,
-          }).format(state.displayAmount)}
+          {(() => {
+            const def = (props.currencies || []).find(
+              (c: CurrencyDef) => c.code === props.currency,
+            ) || { locale: "es-CO", decimals: 0 };
+            return new Intl.NumberFormat(def.locale, {
+              style: "currency",
+              currency: props.currency,
+              maximumFractionDigits: def.decimals,
+            }).format(state.displayAmount);
+          })()}
         </span>
         <button class="edit-btn" onclick={state.startEdit}>Cambiar</button>
       </div>

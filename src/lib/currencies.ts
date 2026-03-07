@@ -101,11 +101,12 @@ export function formatAmount(usdAmount: number, displayCode: string, currencies?
   const def = curs.find(c => c.code === displayCode);
   if (!def) return String(usdAmount);
   const value = fromUSD(usdAmount, displayCode, curs);
-  return new Intl.NumberFormat(def.locale, {
+  const formatted = new Intl.NumberFormat(def.locale, {
     style: "currency",
     currency: displayCode,
     maximumFractionDigits: def.decimals,
   }).format(value);
+  return `${formatted} ${displayCode}`;
 }
 
 /** Get the CurrencyDef for a given code (or USD as fallback). */

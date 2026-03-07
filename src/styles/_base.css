@@ -17,6 +17,18 @@ body {
   overflow: hidden;
   height: 100vh;
   height: 100dvh;
+
+  /* Prevent native text selection and tap highlights to feel like a real app */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Allow selection in input fields */
+input,
+textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
 h1,

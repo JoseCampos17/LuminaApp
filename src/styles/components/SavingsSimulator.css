@@ -90,3 +90,30 @@
   color: var(--text-dim);
   opacity: 0.8;
 }
+
+/* Appended from SavingsSimulator.svelte */
+.simulator-card.warning-state {
+  border: 1px solid rgba(255, 60, 60, 0.3);
+}
+
+.danger-text {
+  color: #ff4d4d !important;
+}
+
+.danger-bg {
+  background: rgba(255, 60, 60, 0.05);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.negative {
+  color: #ff4d4d;
+  font-weight: 700;
+}
+
+.total-amount.danger {
+  color: #ff4d4d;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
