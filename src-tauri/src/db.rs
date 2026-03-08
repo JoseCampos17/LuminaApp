@@ -135,19 +135,6 @@ pub fn init(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error::Er
         }
     }
 
-    // CLEANUP: If there's a record with exactly '2026-01-01', it was likely from the first (bad) migration.
-    // Move it to today to avoid showing salary in the past improperly.
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let today = format_date_from_secs(now);
-    
-    conn.execute(
-        "UPDATE salary_history SET effective_date = ?1 WHERE effective_date = '2026-01-01'",
-        params![today],
-    )?;
-
     Ok(conn)
 }
 

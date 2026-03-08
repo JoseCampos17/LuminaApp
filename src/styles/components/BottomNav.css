@@ -1,6 +1,7 @@
 .bottom-nav {
   position: fixed;
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  /* 20px fallback ensures space above Android 3-button nav if env() is empty/0 */
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   left: 14px;
   right: 14px;
   height: 65px;
@@ -55,15 +56,15 @@
   filter: drop-shadow(0 0 8px var(--neon-blue));
 }
 
-/* Appended from BottomNav.svelte */
-.bottom-nav {
+/* Appended from BottomNav.svelte (duplicate fallback logic) */
+.bottom-nav-mobile {
   display: flex;
   justify-content: space-around;
   align-items: center;
   background: var(--bg-card);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-color);
-  padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 24px)) 0;
+  padding: 12px 0 calc(20px + env(safe-area-inset-bottom, 24px)) 0;
   position: fixed;
   bottom: 0;
   left: 0;

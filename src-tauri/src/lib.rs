@@ -155,17 +155,14 @@ fn update_salary(
     db::update_setting(&conn, "biweekly_salary_currency", &currency).map_err(|e| e.to_string())?;
     db::update_setting(&conn, "salary_frequency", &frequency).map_err(|e| e.to_string())?;
 
-    // 2. Add or Update record for the specific month (Effective on the 1st)
-    // If no month/year provided (fallback), use today's.
-    let effective_date = if let (Some(m), Some(y)) = (month, year) {
-        format!("{:04}-{:02}-01", y, m + 1)
-    } else {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        db::format_date_from_secs(now)
-    };
+    // 2. ALWAYS use today's date as effective_date.
+    // We intentionally IGNORE any month/year passed from the frontend to prevent
+    // accidental overwriting of historical salary records.
+    let now_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let effective_date = db::format_date_from_secs(now_secs);
     
     // Check if a record already exists for THIS EXACT DATE
     let exists: bool = conn.query_row(
@@ -295,6 +292,7 @@ fn debug_dump_db(state: tauri::State<'_, DbState>) -> Result<String, String> {
         result.push('\n');
     }
     
+    println!("[Rust] DEBUG DUMP: \n{}", result);
     Ok(result)
 }
 

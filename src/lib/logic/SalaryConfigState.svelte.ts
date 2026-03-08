@@ -74,9 +74,11 @@ export class SalaryConfigState {
 
   loadSalary = async () => {
     try {
+      const now = new Date();
+      // Load their CURRENT real-life salary to configure it
       const data = await invoke("get_salary", {
-        month: financeState.selectedMonth,
-        year: financeState.selectedYear
+        month: now.getMonth(),
+        year: now.getFullYear()
       }) as any;
       const rawAmount = data.amount;
       const rawCurrency = data.currency || "USD";
@@ -96,13 +98,15 @@ export class SalaryConfigState {
         ? this.editValue / 2
         : this.editValue;
 
+      const now = new Date();
       // Save the bi-weekly amount directly to the database
+      // ALWAYS SAVE to the current real-life month since this is the global Config
       await invoke("update_salary", {
         amount: biweeklyLocal,
         currency: this.props.currency,
         frequency: "quincena", // always quincena since we normalize before saving
-        month: financeState.selectedMonth,
-        year: financeState.selectedYear
+        month: now.getMonth(),
+        year: now.getFullYear()
       });
 
       // Persist the frequency preference in localStorage

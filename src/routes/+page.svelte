@@ -107,6 +107,15 @@
     dash.loadData();
   });
 
+  // When the user switches to the Config tab, reload the salary using TODAY's date
+  // so the Config always shows the real-world current salary, never a historical one.
+  let salaryReloadFn: (() => void) | null = null;
+  $effect(() => {
+    if (dash.ui.activeTab === "config" && salaryReloadFn) {
+      salaryReloadFn();
+    }
+  });
+
   // ─── Swipe to Delete Action State ──────────────────────────────
   let showRecurringDeleteModal = $state(false);
   let showRecurringEditModal = $state(false);
@@ -632,19 +641,17 @@
     <div class="brand">
       <h1 class="gradient-text">Lumina</h1>
       <ThemeToggle />
+      <button
+        class="theme-toggle time-toggle"
+        class:active={dash.finance.isTimeMode}
+        onclick={() => (dash.finance.isTimeMode = !dash.finance.isTimeMode)}
+        title="Modo Tiempo-Vida (Time = Money)"
+      >
+        <span class="icon">{dash.finance.isTimeMode ? "⏳" : "⌛"}</span>
+      </button>
     </div>
     <div class="actions">
       <PeriodSelector />
-      <CurrencyToggle
-        currency={dash.finance.currency}
-        currencies={dash.toggleOptions().map((code) => ({
-          code,
-          locale: code === "USD" ? "en-US" : code === "CLP" ? "es-CL" : "es-CO",
-          decimals: code === "USD" ? 2 : 0,
-          rateToUsd: 1,
-        }))}
-        onToggle={(val) => (dash.finance.currency = val)}
-      />
     </div>
   </header>
 
@@ -784,22 +791,51 @@
         <div class="tx-scroll">
           {#each dash.currentPeriodTransactions().slice(0, 2) as tx, i}
             <div
-              class="tx-item glass-card swipeable"
+              class="tx-item glass-card {String(tx.id).startsWith(
+                'virtual-salary',
+              )
+                ? ''
+                : 'swipeable'}"
               class:disappearing={txDisappearingId === tx.id}
               style={txSwipingId === tx.id
                 ? `transform: translateX(${txSwipeOffset}px)`
                 : ""}
-              ontouchstart={(e) => handleTxTouchStart(e, tx.id)}
-              ontouchmove={handleTxTouchMove}
-              ontouchend={(e) => handleTxTouchEnd(e, tx)}
-              onmousedown={(e) => handleTxTouchStart(e, tx.id)}
-              onmousemove={handleTxTouchMove}
-              onmouseup={(e) => handleTxTouchEnd(e, tx)}
-              onmouseleave={(e) => handleTxTouchEnd(e, tx)}
-              onclick={() => handleClickTxEdit(tx)}
+              ontouchstart={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchStart(e, tx.id)}
+              ontouchmove={String(tx.id).startsWith("virtual-salary")
+                ? null
+                : handleTxTouchMove}
+              ontouchend={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchEnd(e, tx)}
+              onmousedown={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchStart(e, tx.id)}
+              onmousemove={String(tx.id).startsWith("virtual-salary")
+                ? null
+                : handleTxTouchMove}
+              onmouseup={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchEnd(e, tx)}
+              onmouseleave={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchEnd(e, tx)}
+              onclick={() =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleClickTxEdit(tx)}
               role="button"
               tabindex="0"
-              onkeypress={(e) => e.key === "Enter" && handleClickTxEdit(tx)}
+              onkeypress={(e) =>
+                e.key === "Enter" &&
+                !String(tx.id).startsWith("virtual-salary") &&
+                handleClickTxEdit(tx)}
             >
               <div class="tx-left">
                 <span class="tx-desc">{tx.description}</span>
@@ -811,31 +847,35 @@
                 >
                   {tx.amount > 0 ? "+" : ""}{dash.formatLocalAmount(tx.amount)}
                 </span>
-                <button
-                  class="more-btn"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    openActionMenu(tx, "transaction");
-                  }}
-                  aria-label="Más acciones"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    width="18"
-                    height="18"
+                {#if !String(tx.id).startsWith("virtual-salary")}
+                  <button
+                    class="more-btn"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      openActionMenu(tx, "transaction");
+                    }}
+                    aria-label="Más acciones"
                   >
-                    <circle cx="12" cy="12" r="1"></circle>
-                    <circle cx="12" cy="5" r="1"></circle>
-                    <circle cx="12" cy="19" r="1"></circle>
-                  </svg>
-                </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      width="18"
+                      height="18"
+                    >
+                      <circle cx="12" cy="12" r="1"></circle>
+                      <circle cx="12" cy="5" r="1"></circle>
+                      <circle cx="12" cy="19" r="1"></circle>
+                    </svg>
+                  </button>
+                {/if}
               </div>
-              <div class="delete-backdrop"></div>
+              {#if !String(tx.id).startsWith("virtual-salary")}
+                <div class="delete-backdrop"></div>
+              {/if}
             </div>
           {/each}
           {#if dash.currentPeriodTransactions().length === 0}
@@ -859,22 +899,49 @@
             .currentPeriodTransactions()
             .slice(0, visibleRecords) as tx, index}
             <div
-              class="tx-item swipeable"
+              class="tx-item {String(tx.id).startsWith('virtual-salary')
+                ? ''
+                : 'swipeable'}"
               class:disappearing={txDisappearingId === tx.id}
               style={txSwipingId === tx.id
                 ? `transform: translateX(${txSwipeOffset}px)`
                 : ""}
-              ontouchstart={(e) => handleTxTouchStart(e, tx.id)}
-              ontouchmove={handleTxTouchMove}
-              ontouchend={(e) => handleTxTouchEnd(e, tx)}
-              onmousedown={(e) => handleTxTouchStart(e, tx.id)}
-              onmousemove={handleTxTouchMove}
-              onmouseup={(e) => handleTxTouchEnd(e, tx)}
-              onmouseleave={(e) => handleTxTouchEnd(e, tx)}
-              onclick={() => handleClickTxEdit(tx)}
+              ontouchstart={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchStart(e, tx.id)}
+              ontouchmove={String(tx.id).startsWith("virtual-salary")
+                ? null
+                : handleTxTouchMove}
+              ontouchend={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchEnd(e, tx)}
+              onmousedown={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchStart(e, tx.id)}
+              onmousemove={String(tx.id).startsWith("virtual-salary")
+                ? null
+                : handleTxTouchMove}
+              onmouseup={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchEnd(e, tx)}
+              onmouseleave={(e) =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleTxTouchEnd(e, tx)}
+              onclick={() =>
+                String(tx.id).startsWith("virtual-salary")
+                  ? null
+                  : handleClickTxEdit(tx)}
               role="button"
               tabindex="0"
-              onkeypress={(e) => e.key === "Enter" && handleClickTxEdit(tx)}
+              onkeypress={(e) =>
+                e.key === "Enter" &&
+                !String(tx.id).startsWith("virtual-salary") &&
+                handleClickTxEdit(tx)}
             >
               <div class="tx-left">
                 <span class="tx-desc"
@@ -888,31 +955,35 @@
                 >
                   {tx.amount > 0 ? "+" : ""}{dash.formatLocalAmount(tx.amount)}
                 </span>
-                <button
-                  class="more-btn"
-                  onclick={(e) => {
-                    e.stopPropagation();
-                    openActionMenu(tx, "transaction");
-                  }}
-                  aria-label="Más acciones"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    width="18"
-                    height="18"
+                {#if !String(tx.id).startsWith("virtual-salary")}
+                  <button
+                    class="more-btn"
+                    onclick={(e) => {
+                      e.stopPropagation();
+                      openActionMenu(tx, "transaction");
+                    }}
+                    aria-label="Más acciones"
                   >
-                    <circle cx="12" cy="12" r="1"></circle>
-                    <circle cx="12" cy="5" r="1"></circle>
-                    <circle cx="12" cy="19" r="1"></circle>
-                  </svg>
-                </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      width="18"
+                      height="18"
+                    >
+                      <circle cx="12" cy="12" r="1"></circle>
+                      <circle cx="12" cy="5" r="1"></circle>
+                      <circle cx="12" cy="19" r="1"></circle>
+                    </svg>
+                  </button>
+                {/if}
               </div>
-              <div class="delete-backdrop"></div>
+              {#if !String(tx.id).startsWith("virtual-salary")}
+                <div class="delete-backdrop"></div>
+              {/if}
             </div>
           {/each}
           {#if dash.currentPeriodTransactions().length === 0}
@@ -1140,6 +1211,9 @@
           currency={dash.finance.localCurrency}
           currencies={dash.finance.currencies}
           onSalaryUpdated={dash.loadData}
+          onActivate={(fn) => {
+            salaryReloadFn = fn;
+          }}
         />
 
         <div
@@ -2070,12 +2144,18 @@
     font-size: 1rem;
   }
 
+  .brand .time-toggle.active {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--neon-green));
+    transform: scale(1.15);
+  }
+
   /* Folders Grid Styles */
   .folders-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    padding: 10px 15px 120px 15px; /* Added large bottom padding for scroll safe area */
+    padding: 10px 15px 120px 15px;
     overflow-y: auto;
     flex: 1;
     min-height: 0;
@@ -2084,6 +2164,7 @@
   .folder-wrapper {
     position: relative;
     display: flex;
+    height: 100%;
   }
 
   .folder-card {
@@ -2102,6 +2183,7 @@
       transform 0.2s,
       box-shadow 0.2s;
     width: 100%;
+    min-height: 140px;
     color: inherit;
   }
 

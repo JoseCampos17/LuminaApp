@@ -7,6 +7,7 @@
     onSalaryUpdated: () => void;
     currency?: string;
     currencies?: CurrencyDef[];
+    onActivate?: (reload: () => void) => void;
   }>();
 
   const state = new SalaryConfigState({
@@ -19,6 +20,14 @@
     get currencies() {
       return props.currencies;
     },
+  });
+
+  // Expose the loadSalary function to the parent so it can trigger a reload
+  // when the config tab becomes active (ensuring we always show today's salary)
+  $effect(() => {
+    if (props.onActivate) {
+      props.onActivate(() => state.loadSalary());
+    }
   });
 </script>
 

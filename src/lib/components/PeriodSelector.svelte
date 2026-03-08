@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { financeState } from "$lib/stores/finance.svelte";
+    import { financeState, loadData } from "$lib/stores/finance.svelte";
     import { onMount } from "svelte";
 
     let isOpen = $state(false);
@@ -46,20 +46,26 @@
     function selectMonth(m: number) {
         if (financeState.selectedYear === currentYear && m > currentMonth)
             return;
-        financeState.selectedMonth = m;
+        if (financeState.selectedMonth !== m) {
+            financeState.selectedMonth = m;
+            loadData();
+        }
         isOpen = false;
     }
 
     function changeYear(delta: number) {
         const newYear = financeState.selectedYear + delta;
         if (newYear >= 2026 && newYear <= currentYear) {
-            financeState.selectedYear = newYear;
-            // If we moved to current year and selected month is in the future, reset to current month
-            if (
-                newYear === currentYear &&
-                financeState.selectedMonth > currentMonth
-            ) {
-                financeState.selectedMonth = currentMonth;
+            if (financeState.selectedYear !== newYear) {
+                financeState.selectedYear = newYear;
+                // If we moved to current year and selected month is in the future, reset to current month
+                if (
+                    newYear === currentYear &&
+                    financeState.selectedMonth > currentMonth
+                ) {
+                    financeState.selectedMonth = currentMonth;
+                }
+                loadData();
             }
         }
     }
@@ -165,8 +171,14 @@
             <button
                 class="today-btn"
                 onclick={() => {
-                    financeState.selectedMonth = currentMonth;
-                    financeState.selectedYear = currentYear;
+                    if (
+                        financeState.selectedMonth !== currentMonth ||
+                        financeState.selectedYear !== currentYear
+                    ) {
+                        financeState.selectedMonth = currentMonth;
+                        financeState.selectedYear = currentYear;
+                        loadData();
+                    }
                     isOpen = false;
                 }}>Ir a Hoy</button
             >
