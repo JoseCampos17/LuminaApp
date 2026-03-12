@@ -54,6 +54,17 @@ export function removeCategory(name: string) {
     saveCategories();
 }
 
+export function updateCategory(oldName: string, newName: string, icon: string) {
+    if (!newName.trim()) return;
+    const items = [...categoriesState.items];
+    const idx = items.findIndex(c => c.name === oldName);
+    if (idx !== -1) {
+        items[idx] = { name: newName.trim(), icon };
+        categoriesState.items = items;
+        saveCategories();
+    }
+}
+
 export function moveCategory(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex) return;
     const items = [...categoriesState.items];

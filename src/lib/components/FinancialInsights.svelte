@@ -8,6 +8,7 @@
     variableExpenses: number;
     recurringExpenses: RecurringExpense[];
     viewMode: string;
+    isCurrentPeriod: boolean;
   }>();
 
   const state = new FinancialInsightsState({
@@ -81,7 +82,7 @@
         </p>
       </div>
     </div>
-  {:else}
+  {:else if props.isCurrentPeriod}
     <div
       class="insight-card info glass-card clickable"
       onclick={() => (uiState.activeTab = "settings")}

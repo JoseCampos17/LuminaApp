@@ -173,27 +173,30 @@ option {
   /* Centered exactly above the icon */
   width: max-content;
   max-width: 200px;
-  background: rgba(15, 23, 42, 0.98);
-  color: white;
+  background: var(--modal-bg);
+  color: var(--text-color);
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 0.75rem;
-  font-weight: normal;
+  font-weight: 500;
   white-space: normal;
   line-height: 1.4;
   text-align: center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   transform-origin: bottom center;
   z-index: 10000;
   border: 1px solid var(--glass-border);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
   pointer-events: none;
+  backdrop-filter: blur(8px);
 }
 
 .info-icon::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: calc(100% + 4px);
   /* Arrow pointing down from above */
@@ -202,11 +205,13 @@ option {
   /* Centered arrow */
   border-width: 6px;
   border-style: solid;
-  border-color: rgba(15, 23, 42, 0.98) transparent transparent transparent;
+  border-color: var(--glass-border) transparent transparent transparent;
   /* Downward arrow */
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   z-index: 10000;
   pointer-events: none;
 }

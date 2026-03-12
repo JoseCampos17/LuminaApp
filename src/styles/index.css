@@ -8,18 +8,16 @@
 @import "./_base.css";
 @import "./_scrollbar.css";
 @import "./_components.css";
+@import "./components/_views.css";
 
 /* ─── Individual Components ────────────────────────────────────────── */
 @import "./components/Dashboard.css";
 @import "./components/Modal.css";
 @import "./components/TransactionForm.css";
 @import "./components/SalaryConfig.css";
-@import "./components/CurrencyToggle.css";
-@import "./components/CurrencyRates.css";
 @import "./components/RecurringExpenses.css";
 @import "./components/SavingsSimulator.css";
 @import "./components/FinancialInsights.css";
 @import "./components/ThemeToggle.css";
-@import "./components/Tutorial.css";
 @import "./components/BottomNav.css";
 
