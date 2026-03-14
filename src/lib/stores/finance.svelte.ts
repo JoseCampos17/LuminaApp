@@ -292,6 +292,10 @@ export function currencyLabel(): string {
 
 export async function loadData() {
   try {
+    // FORCE CLEAR FOR MVP: Remove these 2 lines later if you want to keep data between sessions.
+    console.log("[MVP] Forcing clear_all_data to wipe out old test state...");
+    await invoke("clear_all_data");
+
     // 1. Fetch latest rates automatically
     financeState.currencies = await fetchRates();
 

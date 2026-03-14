@@ -46,25 +46,8 @@ export class RecurringExpensesState {
     try {
       let expenses: any[] = await invoke("get_recurring_expenses");
 
-      // Auto-Migration: If we detect long ULIDs, replace them with sequential numbers
-      if (expenses.some((e: any) => e.id.length > 10)) {
-        for (const e of expenses) {
-          await invoke("delete_recurring_expense", { id: e.id });
-        }
+      // Auto-Migration logic was removed here (mocks insertion)
 
-        const mocks = [
-          { id: "1", description: "Suscripción Nflx", amount: 20000, frequency: "monthly", day_of_month: 15, day_of_week: null, category: "Entretenimiento" },
-          { id: "2", description: "Gimnasio", amount: 35000, frequency: "monthly", day_of_month: 2, day_of_week: null, category: "Salud" },
-          { id: "3", description: "Ahorro Programado", amount: 100000, frequency: "weekly", day_of_month: null, day_of_week: 5, category: "Finanzas" },
-        ];
-
-        for (const m of mocks) {
-          await invoke("add_recurring_expense", { expense: m });
-        }
-
-        // Reload after migration
-        expenses = await invoke("get_recurring_expenses");
-      }
 
       expenses.sort((a: any, b: any) => {
         const idA = parseInt(a.id, 10);
