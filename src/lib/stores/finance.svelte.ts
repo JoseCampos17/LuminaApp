@@ -118,56 +118,8 @@ export function currentPeriodTransactions() {
     // (Actually we should probably have a quincena toggle, but for now show all)
   });
 
-  // 2. Inject Projections for Missing Records
-  const isPastMonth = selectedYear < now.getFullYear() || (selectedYear === now.getFullYear() && selectedMonth < now.getMonth());
-
-  if (!isPastMonth && financeState.salaryUSD > 0) {
-    const lastDay = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-    const frequency = financeState.salaryFrequency;
-
-    const hasPhysical = (desc: string) => baseTxs.some(t => t.category === "Salario Base" && t.description.includes(desc));
-
-    if (frequency === "quincena") {
-      // Q1 Projection (Day 15)
-      if (!hasPhysical("Quincena 1")) {
-        // En modo quincena, solo mostramos la mitad (el valor configurado es el de la quincena)
-        const isQ1Visible = isMonthly() || (now.getDate() <= 15);
-        if (isQ1Visible) {
-          baseTxs.push({
-            id: `proj-q1-${selectedYear}-${selectedMonth}`,
-            amount: fromUSD(financeState.salaryUSD, financeState.localCurrency, financeState.currencies),
-            description: "Salario (Quincena 1)",
-            date: `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-15`,
-            category: "Salario Base"
-          });
-        }
-      }
-      // Q2 Projection (Last Day)
-      if (!hasPhysical("Quincena 2")) {
-        const isQ2Visible = isMonthly() || (now.getDate() > 15);
-        if (isQ2Visible) {
-          baseTxs.push({
-            id: `proj-q2-${selectedYear}-${selectedMonth}`,
-            amount: fromUSD(financeState.salaryUSD, financeState.localCurrency, financeState.currencies),
-            description: "Salario (Quincena 2)",
-            date: `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${lastDay}`,
-            category: "Salario Base"
-          });
-        }
-      }
-    } else {
-      // Monthly Projection
-      if (!hasPhysical("Mensual")) {
-        baseTxs.push({
-          id: `proj-m-${selectedYear}-${selectedMonth}`,
-          amount: fromUSD(financeState.salaryUSD, financeState.localCurrency, financeState.currencies),
-          description: "Salario (Mensual)",
-          date: `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${lastDay}`,
-          category: "Salario Base"
-        });
-      }
-    }
-  }
+  // 2. Inject Projections for Missing Records - REMOVED per user request
+  // Salary is now completely decoupled from transactions and acts as a global budget.
 
   // Final Sort
   return baseTxs.sort((a, b) => {
@@ -203,9 +155,9 @@ export function displayRecurring() {
 }
 
 export function displayNetIncome() {
-  const baseSalarySum = currentPeriodTransactions()
-    .filter(t => t.category === "Salario Base" && t.amount > 0)
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Use the global salaryValue() directly instead of searching transactions.
+  // We convert it back to local currency since salaryUSD is in USD.
+  const baseSalarySum = fromUSD(salaryValue(), financeState.localCurrency, financeState.currencies);
 
   return baseSalarySum + displayExtraIncome() - displayRecurring();
 }
@@ -292,10 +244,6 @@ export function currencyLabel(): string {
 
 export async function loadData() {
   try {
-    // FORCE CLEAR FOR MVP: Remove these 2 lines later if you want to keep data between sessions.
-    console.log("[MVP] Forcing clear_all_data to wipe out old test state...");
-    await invoke("clear_all_data");
-
     // 1. Fetch latest rates automatically
     financeState.currencies = await fetchRates();
 
@@ -304,12 +252,10 @@ export async function loadData() {
     financeState.transactions = await invoke("get_transactions");
 
     try {
-      console.log(`[Finance] Fetching salary for ${financeState.selectedMonth}/${financeState.selectedYear}`);
       const salaryData = await invoke("get_salary", {
         month: financeState.selectedMonth,
         year: financeState.selectedYear
       }) as any;
-      console.log(`[Finance] Received salaryData:`, salaryData);
 
       const rawAmount = typeof salaryData === "number" ? salaryData : salaryData.amount;
       const rawCurrency = typeof salaryData === "number" ? "USD" : (salaryData.currency || "USD");
@@ -335,7 +281,6 @@ export async function loadData() {
 }
 
 export async function deleteTransaction(id: string) {
-  console.log("[financeStore] Deleting transaction:", id);
   try {
     await invoke("delete_transaction", { id });
     await loadData();
@@ -345,7 +290,6 @@ export async function deleteTransaction(id: string) {
 }
 
 export async function migrateCurrency(oldCode: string, newCode: string) {
-  console.log(`[financeStore] Migrating from ${oldCode} to ${newCode}...`);
   try {
     // 1. Convert Salary
     const salaryData = await invoke("get_salary") as any;
@@ -404,14 +348,12 @@ export async function migrateCurrency(oldCode: string, newCode: string) {
 
     // 5. Reload exactly what we need
     await loadData();
-    console.log("[financeStore] Migration complete.");
   } catch (e) {
     console.error("[financeStore] migrateCurrency error:", e);
   }
 }
 
 export async function clearAllData() {
-  console.log("[financeStore] Clearing all data...");
   try {
     await invoke("clear_all_data");
     await loadData();

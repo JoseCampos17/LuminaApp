@@ -7,14 +7,12 @@ const isTauri = !!(window as any).__TAURI_INTERNALS__ || !!(window as any).__TAU
  */
 export async function invoke(command: string, args: any = {}): Promise<any> {
   if (!isTauri) {
-    console.warn(`[Browser Mock] Calling command: ${command}`, args);
-
     // Simple mocks for browser development
     switch (command) {
       case "get_salary":
         const saved = localStorage.getItem("mock_salary");
         const savedCurr = localStorage.getItem("mock_salary_currency") || "USD";
-        const amt = saved !== null ? Number(saved) : 1000; // default 1000 USD
+        const amt = saved !== null ? Number(saved) : 0; // default 0
         return { amount: amt, currency: savedCurr };
       case "update_salary":
         localStorage.setItem("mock_salary", args.amount.toString());
@@ -32,11 +30,8 @@ export async function invoke(command: string, args: any = {}): Promise<any> {
         localStorage.setItem("mock_transactions", JSON.stringify(txs));
         return null;
       case "delete_transaction":
-        console.log("[Mock] Deleting ID:", args.id);
         const allTxs = JSON.parse(localStorage.getItem("mock_transactions") || "[]");
-        console.log("[Mock] Current count:", allTxs.length);
         const filteredTxs = allTxs.filter((t: any) => String(t.id) !== String(args.id));
-        console.log("[Mock] Count after:", filteredTxs.length);
         localStorage.setItem("mock_transactions", JSON.stringify(filteredTxs));
         return null;
       case "update_transaction":
@@ -63,9 +58,23 @@ export async function invoke(command: string, args: any = {}): Promise<any> {
       case "clear_all_data":
         localStorage.removeItem("mock_transactions");
         localStorage.removeItem("mock_recurring");
-        localStorage.setItem("mock_salary", "0");
-        localStorage.setItem("mock_salary_currency", "COP");
+        localStorage.removeItem("mock_salary_history");
+        localStorage.removeItem("mock_salary");
+        localStorage.removeItem("mock_salary_currency");
         return null;
+
+      case "get_salary_history":
+        const hist = JSON.parse(localStorage.getItem("mock_salary_history") || "[]");
+        const limit = args.limit || 10;
+        const offset = args.offset || 0;
+        return hist.slice(offset, offset + limit);
+
+      case "delete_salary_record":
+        const currentHist = JSON.parse(localStorage.getItem("mock_salary_history") || "[]");
+        const updatedHist = currentHist.filter((r: any) => r.id !== args.id);
+        localStorage.setItem("mock_salary_history", JSON.stringify(updatedHist));
+        return null;
+
       default:
         return null;
     }

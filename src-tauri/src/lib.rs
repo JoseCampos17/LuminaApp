@@ -30,12 +30,22 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn get_salary_history(
     state: tauri::State<'_, DbState>,
+    limit: Option<usize>,
+    offset: Option<usize>,
 ) -> Result<Vec<SalaryRecord>, String> {
     let conn = state.0.lock().map_err(|e| e.to_string())?;
-    let mut stmt = conn.prepare("SELECT id, amount, currency, frequency, effective_date FROM salary_history ORDER BY effective_date DESC, id DESC")
-        .map_err(|e| e.to_string())?;
     
-    let rows = stmt.query_map([], |row| {
+    let limit_val = limit.unwrap_or(10);
+    let offset_val = offset.unwrap_or(0);
+
+    let mut stmt = conn.prepare(
+        "SELECT id, amount, currency, frequency, effective_date 
+         FROM salary_history 
+         ORDER BY effective_date DESC, id DESC 
+         LIMIT ?1 OFFSET ?2"
+    ).map_err(|e| e.to_string())?;
+    
+    let rows = stmt.query_map(rusqlite::params![limit_val, offset_val], |row| {
         Ok(SalaryRecord {
             id: row.get(0)?,
             amount: row.get(1)?,

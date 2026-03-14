@@ -1,6 +1,7 @@
 <script lang="ts">
   import Modal from "$lib/components/Modal.svelte";
   import SalaryConfig from "$lib/components/SalaryConfig.svelte";
+  import SalaryHistory from "$lib/components/SalaryHistory.svelte";
   import { migrateCurrency, clearAllData } from "$lib/stores/finance.svelte";
 
   let { dash } = $props<{ dash: any }>();
@@ -8,11 +9,15 @@
   let showCurrencyConfirmModal = $state(false);
   let pendingCurrency = $state<string | null>(null);
   let showClearAllConfirmModal = $state(false);
+  let showHistoryModal = $state(false);
 
   let salaryReloadFn: (() => void) | null = null;
+  let historyCmp: any;
+
   $effect(() => {
-    if (dash.ui.activeTab === "settings" && salaryReloadFn) {
-      salaryReloadFn();
+    if (dash.ui.activeTab === "settings") {
+      if (salaryReloadFn) salaryReloadFn();
+      if (historyCmp && historyCmp.loadHistory) historyCmp.loadHistory();
     }
   });
 
@@ -86,7 +91,10 @@
     <SalaryConfig
       currency={dash.finance.localCurrency}
       currencies={dash.finance.currencies}
-      onSalaryUpdated={dash.loadData}
+      onSalaryUpdated={() => {
+        dash.loadData();
+        if (historyCmp && historyCmp.loadHistory) historyCmp.loadHistory();
+      }}
       onActivate={(fn) => {
         salaryReloadFn = fn;
       }}
@@ -98,6 +106,23 @@
         </p>
       </div>
     {/if}
+
+    <div class="local-currency-box glass-card" style="margin-top: 15px;">
+      <span class="label">Historial de Salarios 📅</span>
+      <p style="color: var(--text-dim); font-size: 0.9rem; margin: 5px 0 15px 0;">
+        Revisa los cambios que has hecho en tu sueldo a través del tiempo.
+      </p>
+      <button
+        class="add-btn"
+        style="width: 100%; border: 1px solid rgba(255,255,255,0.1);"
+        onclick={() => {
+          showHistoryModal = true;
+          if (historyCmp && historyCmp.loadHistory) historyCmp.loadHistory();
+        }}
+        >
+        Ver Historial
+      </button>
+    </div>
 
     <div
       class="local-currency-box glass-card"
@@ -151,6 +176,17 @@
     </div>
   </div>
 </section>
+
+<!-- Salary History Modal -->
+<Modal
+  isOpen={showHistoryModal}
+  close={() => (showHistoryModal = false)}
+  title="Historial de Salarios"
+>
+  <div style="margin-top: 10px;">
+    <SalaryHistory bind:this={historyCmp} />
+  </div>
+</Modal>
 
 <!-- Confirm Currency Change Modal -->
 <Modal

@@ -1,22 +1,38 @@
 <script lang="ts">
   import { fade, scale } from "svelte/transition";
 
-  let { isOpen, close, title, children, minimal = false } = $props();
+  let { isOpen, close, title, children, minimal = false, zIndex = 1000 } = $props();
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") close();
+  }
+
+  function portal(node: HTMLElement) {
+    if (typeof document !== "undefined") {
+      document.body.appendChild(node);
+      return {
+        destroy() {
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          }
+        }
+      };
+    }
+    return {};
   }
 </script>
 
 {#if isOpen}
   <div
     class="modal-backdrop"
+    style="z-index: {zIndex};"
     onclick={close}
     onkeydown={(e) => e.key === "Escape" && close()}
     transition:fade={{ duration: 200 }}
     role="button"
     tabindex="0"
     aria-label="Cerrar modal"
+    use:portal
   >
     <div
       class="modal-content glass-card"
