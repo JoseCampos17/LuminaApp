@@ -31,12 +31,15 @@ import {
 } from "$lib/stores/ui.svelte";
 
 import { checkSpendingAlert } from "$lib/alerts";
+import { notificationService } from "$lib/logic/NotificationService.svelte";
 
 export class DashboardState {
   constructor() {
     onMount(() => {
       loadData();
       initTutorial();
+      // Request notification permission on first launch if not yet granted
+      notificationService.requestPermissionOnStartup();
     });
   }
 
@@ -82,6 +85,13 @@ export class DashboardState {
       this.finance.transactions,
       amount,
     );
+    // Check and fire system notifications
+    await notificationService.checkAndNotify({
+      liquidityPercent: displayRadarValue(),
+      netIncome: displayNetIncome(),
+      variableExpenses: displayVariableExpenses(),
+      recurringExpenses: this.finance.recurringExpenses as any[],
+    });
   };
 
   handleEditComplete = async () => {

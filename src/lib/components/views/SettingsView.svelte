@@ -2,7 +2,11 @@
   import Modal from "$lib/components/Modal.svelte";
   import SalaryConfig from "$lib/components/SalaryConfig.svelte";
   import SalaryHistory from "$lib/components/SalaryHistory.svelte";
-  import { migrateCurrency, clearAllData } from "$lib/stores/finance.svelte";
+  import { migrateCurrency, clearAllData, financeState } from "$lib/stores/finance.svelte";
+  import { NotificationSettingsState } from "$lib/logic/NotificationSettingsState.svelte";
+  import { exportTransactionsCSV } from "$lib/services/ExportService";
+
+  const notifState = new NotificationSettingsState();
 
   let { dash } = $props<{ dash: any }>();
 
@@ -120,7 +124,57 @@
           if (historyCmp && historyCmp.loadHistory) historyCmp.loadHistory();
         }}
         >
-        Ver Historial
+      Ver Historial
+      </button>
+    </div>
+
+    <!-- Notifications Settings Card -->
+    <div class="local-currency-box glass-card" style="margin-top: 15px;">
+      <span class="label">Notificaciones 🔔</span>
+      <p style="color: var(--text-dim); font-size: 0.9rem; margin: 5px 0 15px 0;">
+        Alertas locales del sistema. Sin internet, todo en tu dispositivo.
+      </p>
+      {#if notifState.isLoading}
+        <p style="color: var(--text-dim); font-size: 0.85rem;">Cargando...</p>
+      {:else}
+        <div class="notif-list">
+          {#each notifState.settings as setting (setting.key)}
+            {@const meta = notifState.getLabel(setting.key)}
+            <div class="notif-row">
+              <div class="notif-info">
+                <span class="notif-label">{meta.label}</span>
+                <span class="notif-desc">{meta.description}</span>
+              </div>
+              <button
+                class="notif-toggle {setting.enabled ? 'on' : 'off'}"
+                onclick={() => notifState.toggle(setting.key)}
+                role="switch"
+                aria-checked={setting.enabled}
+                aria-label="Toggle {meta.label}"
+              >
+                <span class="notif-toggle-thumb"></span>
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Export Data Card -->
+    <div class="local-currency-box glass-card" style="margin-top: 15px;">
+      <span class="label">Exportar Datos 📤</span>
+      <p style="color: var(--text-dim); font-size: 0.9rem; margin: 5px 0 15px 0;">
+        Descarga tus movimientos en formato CSV para abrirlos en Excel o cualquier hoja de cálculo.
+      </p>
+      <button
+        class="add-btn"
+        style="width: 100%; border: 1px solid rgba(255,255,255,0.1);"
+        onclick={() => exportTransactionsCSV(
+          financeState.transactions,
+          financeState.localCurrency,
+        )}
+      >
+        Descargar CSV
       </button>
     </div>
 

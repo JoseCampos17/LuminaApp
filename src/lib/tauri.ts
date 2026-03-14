@@ -75,6 +75,36 @@ export async function invoke(command: string, args: any = {}): Promise<any> {
         localStorage.setItem("mock_salary_history", JSON.stringify(updatedHist));
         return null;
 
+      case "get_notification_settings":
+        const savedSettings = JSON.parse(localStorage.getItem("mock_notification_settings") || "null");
+        if (savedSettings) return savedSettings;
+        // Return defaults
+        return [
+          { key: "liquidity_warning", enabled: true },
+          { key: "liquidity_critical", enabled: true },
+          { key: "salary_day", enabled: true },
+          { key: "recurring_due_soon", enabled: true },
+          { key: "overspent", enabled: true },
+        ];
+
+      case "update_notification_setting": {
+        const allSettings = JSON.parse(localStorage.getItem("mock_notification_settings") || JSON.stringify([
+          { key: "liquidity_warning", enabled: true },
+          { key: "liquidity_critical", enabled: true },
+          { key: "salary_day", enabled: true },
+          { key: "recurring_due_soon", enabled: true },
+          { key: "overspent", enabled: true },
+        ]));
+        const idx = allSettings.findIndex((s: any) => s.key === args.key);
+        if (idx !== -1) allSettings[idx].enabled = args.enabled;
+        localStorage.setItem("mock_notification_settings", JSON.stringify(allSettings));
+        return null;
+      }
+
+      case "send_notification":
+        // No-op in browser — shows nothing, but doesn't throw either
+        return null;
+
       default:
         return null;
     }

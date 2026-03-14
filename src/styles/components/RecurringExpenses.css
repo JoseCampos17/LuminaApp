@@ -154,6 +154,65 @@
   margin-top: 5px;
 }
 
+/* ─── Folder grid (Recurring tab) ─── */
+.folders-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 10px;
+  overflow-y: auto;
+  padding-bottom: 90px;
+}
+
+.folder-wrapper {
+  position: relative;
+}
+
+.folder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 8px;
+  width: 100%;
+  cursor: pointer;
+  text-align: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+  color: var(--text-color);
+  min-height: 90px;
+}
+
+.folder-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.folder-card:active {
+  transform: translateY(0);
+}
+
+.folder-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.folder-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-color);
+  word-break: break-word;
+}
+
+.folder-count {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
 .cat-item {
   display: flex;
   flex-direction: column;

@@ -111,6 +111,30 @@ pub fn init(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error::Er
         [],
     )?;
 
+    // Create notification settings table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS notification_settings (
+            key TEXT PRIMARY KEY,
+            enabled INTEGER NOT NULL DEFAULT 1
+        )",
+        [],
+    )?;
+
+    // Insert default notification settings (all enabled by default)
+    let default_notifs = [
+        "liquidity_warning",
+        "liquidity_critical",
+        "salary_day",
+        "recurring_due_soon",
+        "overspent",
+    ];
+    for key in &default_notifs {
+        conn.execute(
+            "INSERT OR IGNORE INTO notification_settings (key, enabled) VALUES (?1, 1)",
+            params![key],
+        )?;
+    }
+
     // Migrate existing salary if salary_history is empty
     let count: i64 = conn.query_row("SELECT COUNT(*) FROM salary_history", [], |r| r.get(0))?;
     if count == 0 {

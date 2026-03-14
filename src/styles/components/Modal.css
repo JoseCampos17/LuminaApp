@@ -35,7 +35,10 @@
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
   -webkit-background-clip: text;
   background-clip: text;

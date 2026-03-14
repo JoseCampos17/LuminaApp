@@ -271,6 +271,41 @@ async fn send_notification(app: tauri::AppHandle, title: String, body: String) -
     Ok(())
 }
 
+#[derive(Serialize)]
+pub struct NotificationSetting {
+    pub key: String,
+    pub enabled: bool,
+}
+
+#[tauri::command]
+fn get_notification_settings(state: tauri::State<'_, DbState>) -> Result<Vec<NotificationSetting>, String> {
+    let conn = state.0.lock().map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare("SELECT key, enabled FROM notification_settings ORDER BY key")
+        .map_err(|e| e.to_string())?;
+    let rows = stmt.query_map([], |row| {
+        Ok(NotificationSetting {
+            key: row.get(0)?,
+            enabled: row.get::<_, i32>(1)? != 0,
+        })
+    }).map_err(|e| e.to_string())?;
+    let mut list = Vec::new();
+    for row in rows {
+        list.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(list)
+}
+
+#[tauri::command]
+fn update_notification_setting(state: tauri::State<'_, DbState>, key: String, enabled: bool) -> Result<(), String> {
+    let conn = state.0.lock().map_err(|e| e.to_string())?;
+    conn.execute(
+        "UPDATE notification_settings SET enabled = ?1 WHERE key = ?2",
+        rusqlite::params![enabled as i32, key],
+    ).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+
 #[tauri::command]
 fn debug_dump_db(state: tauri::State<'_, DbState>) -> Result<String, String> {
     let conn = state.0.lock().map_err(|e| e.to_string())?;
@@ -333,7 +368,9 @@ pub fn run() {
             send_notification,
             get_salary_history,
             delete_salary_record,
-            debug_dump_db
+            debug_dump_db,
+            get_notification_settings,
+            update_notification_setting
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

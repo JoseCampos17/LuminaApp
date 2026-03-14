@@ -377,6 +377,12 @@
   import CategoryModal from "$lib/components/modals/CategoryModal.svelte";
   import ConfirmationModal from "$lib/components/modals/ConfirmationModal.svelte";
   import InfoModal from "$lib/components/modals/InfoModal.svelte";
+  import OnboardingModal from "$lib/components/OnboardingModal.svelte";
+
+  // Show onboarding only on first ever use
+  let showOnboarding = $state(
+    typeof localStorage !== "undefined" && !localStorage.getItem("lumina_onboarded")
+  );
 </script>
 
 <main class="dashboard {dash.ui.activeTab}">
@@ -595,6 +601,10 @@
     onConfirm={confirmDeleteFolder}
     confirmLabel="Borrar Todo"
   />
+  <!-- Onboarding (first launch only) -->
+  {#if showOnboarding}
+    <OnboardingModal onComplete={() => (showOnboarding = false)} />
+  {/if}
 </main>
 
 <style>

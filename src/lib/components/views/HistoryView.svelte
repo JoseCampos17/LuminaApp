@@ -1,6 +1,9 @@
 <script lang="ts">
   import PeriodSelector from "$lib/components/PeriodSelector.svelte";
   import SwipeableItem from "$lib/components/ui/SwipeableItem.svelte";
+  import CategoryChart from "$lib/components/CategoryChart.svelte";
+  import Modal from "$lib/components/Modal.svelte";
+  import { CategoryChartState } from "$lib/logic/CategoryChartState.svelte";
 
   let {
     dash,
@@ -24,6 +27,25 @@
       type: "transaction" | "recurring" | "folder",
     ) => void;
   }>();
+
+  let selectedCategory = $state<string | null>(null);
+  let showChartModal = $state(false);
+
+  const chartState = new CategoryChartState({
+    get transactions() {
+      return dash.currentPeriodTransactions().filter(
+        (t: any) => !String(t.id).startsWith("virtual-salary"),
+      );
+    },
+  });
+
+  function filteredTransactions() {
+    const all = dash.currentPeriodTransactions();
+    if (!selectedCategory) return all;
+    return all.filter(
+      (t: any) => (t.category || "Sin categoría") === selectedCategory,
+    );
+  }
 </script>
 
 <section class="full-history">
@@ -32,15 +54,43 @@
     style="display: flex; justify-content: space-between; align-items: center; width: 100%;"
   >
     <h2>Historial de Movimientos</h2>
-    <div class="actions">
+    <div class="actions" style="display:flex;gap:8px;align-items:center;">
+      <button
+        class="chip {showChartModal ? 'active' : ''}"
+        onclick={() => (showChartModal = true)}
+        title="Ver gráfica por categoría"
+        aria-label="Abrir gráfica de categorías"
+      >
+        📊
+      </button>
       <PeriodSelector />
     </div>
   </div>
+
+  <!-- Category filter chips -->
+  {#if chartState.categories.length > 1}
+    <div class="category-chips">
+      <button
+        class="chip {selectedCategory === null ? 'active' : ''}"
+        onclick={() => (selectedCategory = null)}
+      >
+        Todo
+      </button>
+      {#each chartState.categories as cat}
+        <button
+          class="chip {selectedCategory === cat ? 'active' : ''}"
+          onclick={() => (selectedCategory = selectedCategory === cat ? null : cat)}
+        >
+          {cat}
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Transaction list — always full height -->
   <div class="history-container glass-card">
     <div class="history-list" onscroll={handleScroll}>
-      {#each dash
-        .currentPeriodTransactions()
-        .slice(0, visibleRecords) as tx, index}
+      {#each filteredTransactions().slice(0, visibleRecords) as tx}
         <SwipeableItem
           id={tx.id}
           disabled={String(tx.id).startsWith("virtual-salary")}
@@ -88,13 +138,22 @@
           </div>
         </SwipeableItem>
       {/each}
-      {#if dash.currentPeriodTransactions().length === 0}
+      {#if filteredTransactions().length === 0}
         <p class="empty">
-          No hay movimientos en {monthNames[dash.finance.selectedMonth]} de {dash
-            .finance.selectedYear}.
+          {selectedCategory
+            ? `Sin movimientos en "${selectedCategory}".`
+            : `No hay movimientos en ${monthNames[dash.finance.selectedMonth]} de ${dash.finance.selectedYear}.`}
         </p>
       {/if}
     </div>
   </div>
 </section>
 
+<!-- Chart Modal -->
+<Modal isOpen={showChartModal} close={() => (showChartModal = false)} title="Gastos por Categoría 📊">
+  <CategoryChart
+    slices={chartState.slices}
+    totalExpenses={chartState.totalExpenses}
+    formatAmount={(n) => dash.formatLocalAmount(n)}
+  />
+</Modal>
